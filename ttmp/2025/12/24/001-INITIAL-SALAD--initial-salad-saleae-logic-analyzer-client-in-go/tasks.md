@@ -10,3 +10,5 @@
 - [x] Implement grpc dial + Saleae client wrapper (context, timeouts, errors wrapping)
 - [ ] Implement CLI commands: appinfo (first), then capture/analyzer/export skeletons
 - [x] Write a minimal manual test playbook (start Logic2 with --automation, run appinfo)
+- [x] Implement devices command (GetDevices)
+- [x] Live-test CLI against real Logic2 automation server

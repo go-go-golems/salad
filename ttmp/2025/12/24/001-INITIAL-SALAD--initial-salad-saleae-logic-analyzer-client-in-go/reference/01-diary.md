@@ -273,3 +273,5 @@ device_id=9E7A9F3533975A55 device_type=DEVICE_TYPE_LOGIC_PRO_8 is_simulation=fal
 
 ### Code review instructions
 - N/A (no code changes in this step)
+
+**Commit (code):** b4e51a4db6c9477bae367c21805e0b98ef176aea — "Add Saleae Logic2 gRPC client (appinfo/devices)"

@@ -67,3 +67,13 @@ Validated CLI against running Logic 2 automation server (appinfo + devices succe
 
 - /home/manuel/workspaces/2025-12-21/echo-base-documentation/salad/ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/reference/01-diary.md — Step 5 live test outputs
 
+
+## 2025-12-24
+
+Committed initial Go client + docs (commit b4e51a4d); added and checked off explicit tasks for devices + live test.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-21/echo-base-documentation/salad/ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/reference/01-diary.md — Recorded commit hash
+- /home/manuel/workspaces/2025-12-21/echo-base-documentation/salad/ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/tasks.md — Added tasks 8-9 and checked them
+
