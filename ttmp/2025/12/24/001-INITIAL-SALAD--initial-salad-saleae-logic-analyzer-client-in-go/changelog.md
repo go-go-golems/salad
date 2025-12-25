@@ -91,3 +91,12 @@ Added capture (load/save/stop/wait/close) and export (raw-csv/raw-binary) comman
 - /home/manuel/workspaces/2025-12-21/echo-base-documentation/salad/internal/saleae/client.go — Capture/export wrapper methods
 - /home/manuel/workspaces/2025-12-21/echo-base-documentation/salad/ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/reference/01-diary.md — Step 6 diary entry
 
+
+## 2025-12-24
+
+Created design doc brainstorming CLI features/workflows mapped to Saleae Logic2 automation proto.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-21/echo-base-documentation/salad/ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/design-doc/01-feature-brainstorm-powerful-saleae-logic2-cli-workflows.md — Feature brainstorm document
+

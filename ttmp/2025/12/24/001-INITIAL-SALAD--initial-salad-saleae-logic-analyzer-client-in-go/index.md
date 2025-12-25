@@ -37,6 +37,8 @@ RelatedFiles:
       Note: Client config
     - Path: proto/saleae/grpc/saleae.proto
       Note: Vendored Saleae automation API proto
+    - Path: ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/design-doc/01-feature-brainstorm-powerful-saleae-logic2-cli-workflows.md
+      Note: Brainstormed roadmap and CLI feature menu
     - Path: ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/playbook/01-manual-smoke-test-logic2-automation.md
       Note: Manual smoke test playbook
     - Path: ttmp/2025/12/24/001-INITIAL-SALAD--initial-salad-saleae-logic-analyzer-client-in-go/reference/01-diary.md
@@ -47,6 +49,7 @@ LastUpdated: 2025-12-24T20:59:04.48047343-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

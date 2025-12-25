@@ -328,3 +328,34 @@ With this in place, the next work becomes incremental: add `capture start` (manu
   - `cmd/salad/cmd/export.go`
 - Then review:
   - `internal/saleae/client.go`
+
+## Step 7: Proto-driven feature brainstorm for a power-user CLI
+
+This step took a fresh pass over the vendored `saleae.proto` and mapped every available RPC + key message types into a long-form “feature menu” for a CLI-oriented Saleae debugging workflow. The goal is to keep future implementation grounded: prioritize features that the proto already supports, and explicitly flag where we’d need conventions or post-processing.
+
+### What I did
+- Enumerated the RPC surface area (`GetAppInfo`, `GetDevices`, capture lifecycle, analyzers, exports).
+- Extracted the key UX-driving message types (capture modes, trigger config, analyzer settings maps, export filtering).
+- Wrote a design-doc capturing:
+  - command ideas
+  - pipeline wrappers
+  - session/manifest concepts
+  - suggested near-term roadmap
+
+### What worked
+- The proto is rich enough to support a serious “scriptable Logic2” workflow: timed/manual/triggered capture plus exports and analyzer operations.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The analyzer settings are intentionally generic (`map<string, ...>`), which suggests our CLI should lean on templates and JSON/YAML settings files.
+
+### What was tricky to build
+- N/A (documentation-only step)
+
+### What warrants a second pair of eyes
+- Roadmap prioritization: which workflows are most valuable first (capture start vs data table export vs session/pipelines).
+
+### What should be done in the future
+- N/A
