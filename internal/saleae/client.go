@@ -77,6 +77,148 @@ func (c *Client) GetDevices(ctx context.Context, includeSimulationDevices bool) 
 	return reply.GetDevices(), nil
 }
 
+func (c *Client) LoadCapture(ctx context.Context, filepath string) (uint64, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if filepath == "" {
+		return 0, errors.New("LoadCapture: filepath is required")
+	}
+
+	reply, err := c.manager.LoadCapture(ctx, &pb.LoadCaptureRequest{Filepath: filepath})
+	if err != nil {
+		return 0, errors.Wrap(err, "LoadCapture RPC")
+	}
+
+	if reply.GetCaptureInfo() == nil {
+		return 0, errors.New("LoadCapture: reply.capture_info is nil")
+	}
+
+	return reply.GetCaptureInfo().GetCaptureId(), nil
+}
+
+func (c *Client) SaveCapture(ctx context.Context, captureID uint64, filepath string) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("SaveCapture: capture-id must be non-zero")
+	}
+	if filepath == "" {
+		return errors.New("SaveCapture: filepath is required")
+	}
+
+	_, err := c.manager.SaveCapture(ctx, &pb.SaveCaptureRequest{
+		CaptureId: captureID,
+		Filepath:  filepath,
+	})
+	return errors.Wrap(err, "SaveCapture RPC")
+}
+
+func (c *Client) CloseCapture(ctx context.Context, captureID uint64) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("CloseCapture: capture-id must be non-zero")
+	}
+
+	_, err := c.manager.CloseCapture(ctx, &pb.CloseCaptureRequest{CaptureId: captureID})
+	return errors.Wrap(err, "CloseCapture RPC")
+}
+
+func (c *Client) StopCapture(ctx context.Context, captureID uint64) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("StopCapture: capture-id must be non-zero")
+	}
+
+	_, err := c.manager.StopCapture(ctx, &pb.StopCaptureRequest{CaptureId: captureID})
+	return errors.Wrap(err, "StopCapture RPC")
+}
+
+func (c *Client) WaitCapture(ctx context.Context, captureID uint64) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("WaitCapture: capture-id must be non-zero")
+	}
+
+	_, err := c.manager.WaitCapture(ctx, &pb.WaitCaptureRequest{CaptureId: captureID})
+	return errors.Wrap(err, "WaitCapture RPC")
+}
+
+func (c *Client) ExportRawDataCsv(
+	ctx context.Context,
+	captureID uint64,
+	directory string,
+	channels *pb.LogicChannels,
+	analogDownsampleRatio uint64,
+	iso8601Timestamp bool,
+) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("ExportRawDataCsv: capture-id must be non-zero")
+	}
+	if directory == "" {
+		return errors.New("ExportRawDataCsv: directory is required")
+	}
+	if channels == nil {
+		return errors.New("ExportRawDataCsv: channels are required")
+	}
+	if analogDownsampleRatio == 0 {
+		analogDownsampleRatio = 1
+	}
+
+	req := &pb.ExportRawDataCsvRequest{
+		CaptureId:             captureID,
+		Directory:             directory,
+		Channels:              &pb.ExportRawDataCsvRequest_LogicChannels{LogicChannels: channels},
+		AnalogDownsampleRatio: analogDownsampleRatio,
+		Iso8601Timestamp:      iso8601Timestamp,
+	}
+	_, err := c.manager.ExportRawDataCsv(ctx, req)
+	return errors.Wrap(err, "ExportRawDataCsv RPC")
+}
+
+func (c *Client) ExportRawDataBinary(
+	ctx context.Context,
+	captureID uint64,
+	directory string,
+	channels *pb.LogicChannels,
+	analogDownsampleRatio uint64,
+) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("ExportRawDataBinary: capture-id must be non-zero")
+	}
+	if directory == "" {
+		return errors.New("ExportRawDataBinary: directory is required")
+	}
+	if channels == nil {
+		return errors.New("ExportRawDataBinary: channels are required")
+	}
+	if analogDownsampleRatio == 0 {
+		analogDownsampleRatio = 1
+	}
+
+	req := &pb.ExportRawDataBinaryRequest{
+		CaptureId:             captureID,
+		Directory:             directory,
+		Channels:              &pb.ExportRawDataBinaryRequest_LogicChannels{LogicChannels: channels},
+		AnalogDownsampleRatio: analogDownsampleRatio,
+	}
+	_, err := c.manager.ExportRawDataBinary(ctx, req)
+	return errors.Wrap(err, "ExportRawDataBinary RPC")
+}
+
 // DialTimeout is retained for future use (eg separate dial/RPC timeouts).
 // For now, Config.Timeout is used for both.
 var DialTimeout = 0 * time.Second

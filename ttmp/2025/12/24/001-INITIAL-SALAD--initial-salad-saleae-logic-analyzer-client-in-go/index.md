@@ -13,8 +13,12 @@ Owners: []
 RelatedFiles:
     - Path: cmd/salad/cmd/appinfo.go
       Note: appinfo command
+    - Path: cmd/salad/cmd/capture.go
+      Note: Capture commands
     - Path: cmd/salad/cmd/devices.go
       Note: CLI command for GetDevices
+    - Path: cmd/salad/cmd/export.go
+      Note: Export commands
     - Path: cmd/salad/cmd/root.go
       Note: Root Cobra command and flags
     - Path: cmd/salad/main.go
@@ -26,7 +30,9 @@ RelatedFiles:
     - Path: go.mod
       Note: Go module root
     - Path: internal/saleae/client.go
-      Note: Saleae client wrapper
+      Note: |-
+        Saleae client wrapper
+        Saleae client wrappers
     - Path: internal/saleae/config.go
       Note: Client config
     - Path: proto/saleae/grpc/saleae.proto
@@ -41,6 +47,7 @@ LastUpdated: 2025-12-24T20:59:04.48047343-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

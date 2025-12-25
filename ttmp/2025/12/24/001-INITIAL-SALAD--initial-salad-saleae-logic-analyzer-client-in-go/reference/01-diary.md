@@ -275,3 +275,56 @@ device_id=9E7A9F3533975A55 device_type=DEVICE_TYPE_LOGIC_PRO_8 is_simulation=fal
 - N/A (no code changes in this step)
 
 **Commit (code):** b4e51a4db6c9477bae367c21805e0b98ef176aea — "Add Saleae Logic2 gRPC client (appinfo/devices)"
+
+**Commit (docs):** add0340564db240c2eab408251bdef8b14e85ade — "Docs: record live test + task bookkeeping"
+
+## Step 6: Add capture/load/save/stop/wait/close and raw export skeleton commands
+
+This step expands the CLI surface area into the next “useful” operations beyond discovery: working with capture files and invoking raw data exports. The focus is on having commands that compile and map cleanly to the underlying RPCs, even if we’re not yet driving `StartCapture` (which requires a full `CaptureConfiguration` + `LogicDeviceConfiguration`).
+
+With this in place, the next work becomes incremental: add `capture start` (manual/timed/trigger) and then analyzer/table export support.
+
+### What I did
+- Added capture subcommands:
+  - `salad capture load --filepath /abs/path/to/file.sal`
+  - `salad capture save --capture-id <id> --filepath /abs/path/to/out.sal`
+  - `salad capture stop|wait|close --capture-id <id>`
+- Added export subcommands:
+  - `salad export raw-csv --capture-id <id> --directory /abs/dir --digital 0,1,2 [--analog 0,1]`
+  - `salad export raw-binary --capture-id <id> --directory /abs/dir --digital 0,1,2 [--analog 0,1]`
+- Implemented corresponding wrapper methods in `internal/saleae.Client`:
+  - `LoadCapture`, `SaveCapture`, `StopCapture`, `WaitCapture`, `CloseCapture`
+  - `ExportRawDataCsv`, `ExportRawDataBinary`
+- Verified compilation:
+  - `gofmt -w ...`
+  - `go test ./...`
+
+### Why
+- These RPCs have simple request shapes (filepath and capture_id) and are a safe step before the more complex `StartCapture` configuration story.
+- Export commands force us to handle proto `oneof` fields correctly (channels).
+
+### What worked
+- The Cobra command tree renders as expected (`salad capture --help`, `salad export --help`).
+
+### What didn't work
+- N/A
+
+### What I learned
+- The generated Go types for `oneof channels` require setting:
+  - `Channels: &pb.ExportRawDataCsvRequest_LogicChannels{LogicChannels: ...}`
+
+### What was tricky to build
+- Ensuring the channel parsing is strict enough to avoid silently exporting “nothing” (we error if both `--digital` and `--analog` are empty).
+
+### What warrants a second pair of eyes
+- Flag UX: confirm we want comma-separated channel lists as the primary interface vs repeatable flags.
+
+### What should be done in the future
+- Add `capture start` once we decide on an ergonomic way to express `CaptureConfiguration` and `LogicDeviceConfiguration` (likely via JSON/YAML input).
+
+### Code review instructions
+- Start at:
+  - `cmd/salad/cmd/capture.go`
+  - `cmd/salad/cmd/export.go`
+- Then review:
+  - `internal/saleae/client.go`

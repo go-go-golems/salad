@@ -12,3 +12,5 @@
 - [x] Write a minimal manual test playbook (start Logic2 with --automation, run appinfo)
 - [x] Implement devices command (GetDevices)
 - [x] Live-test CLI against real Logic2 automation server
+- [x] Add capture (load/save/stop/wait/close) commands + client wrappers
+- [x] Add export raw-csv/raw-binary commands + client wrappers
