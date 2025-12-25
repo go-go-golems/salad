@@ -18,12 +18,11 @@ RelatedFiles:
     - Path: proto/saleae/grpc/saleae.proto
       Note: Defines the available RPC surface area and message types for brainstorming
 ExternalSources: []
-Summary: Brainstormed feature set for a power-user, CLI-first Saleae Logic2 debugging tool, grounded in the Automation API proto (RPCs + message types).
+Summary: "Brainstormed feature set for a power-user, CLI-first Saleae Logic2 debugging tool, grounded in the Automation API proto (RPCs + message types)."
 LastUpdated: 2025-12-24T22:29:20.984629228-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
-
 
 # Feature brainstorm: powerful Saleae (Logic2) CLI workflows
 
