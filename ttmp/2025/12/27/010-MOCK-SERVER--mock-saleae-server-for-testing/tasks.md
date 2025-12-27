@@ -28,6 +28,7 @@ The goal here is **small number of tasks**, each representing a meaningful capab
   - `GetAppInfo`, `GetDevices`
   - `LoadCapture`, `SaveCapture`, `StopCapture`, `WaitCapture`, `CloseCapture`
   - `ExportRawDataCsv`, `ExportRawDataBinary`
+  - `AddAnalyzer`, `RemoveAnalyzer`
 - [x] Implement `StartCapture` RPC for 002-CAPTURE-START testing:
   - [x] Add `MethodStartCapture` constant to `exec.go`
   - [x] Add `StartCaptureBehaviorConfig` to YAML config schema (`config.go`)
@@ -58,6 +59,7 @@ The goal here is **small number of tasks**, each representing a meaningful capab
 
 - [ ] Table-driven tests that run the salad CLI against the mock for:
   - happy path (appinfo/devices/capture load+save+close/export)
+  - analyzer add/remove happy path
   - missing capture id error behavior
   - `WaitCapture` still-running vs completed cases
   - export placeholder files present when configured

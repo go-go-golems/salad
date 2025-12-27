@@ -129,3 +129,10 @@ Added StartCapture config examples: updated happy-path.yaml, created start-captu
 
 Updated tasks: marked StartCapture implementation tasks as complete. Remaining: tests for StartCapture.
 
+
+## 2025-12-27
+
+Added analyzer RPC support + tests:
+- Implemented `AddAnalyzer` / `RemoveAnalyzer` in the mock server (commit df30f497)
+- Added CLI-vs-mock integration test for analyzers (commit ab14a1c7)
+

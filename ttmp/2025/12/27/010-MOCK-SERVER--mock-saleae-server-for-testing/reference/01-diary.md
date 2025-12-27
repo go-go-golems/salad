@@ -990,3 +990,90 @@ StartCapture implementation is complete and ready for testing 002-CAPTURE-START.
 - YAML config examples for testing scenarios
 
 Remaining work: Add tests for StartCapture to verify behavior matches expectations.
+
+---
+
+## Step 12: Implement analyzer RPCs + CLI-level tests (AddAnalyzer/RemoveAnalyzer)
+
+This step extends the mock server to support the new analyzer commands (`salad analyzer add/remove`). The key goal is long-term regression safety: once we start extending analyzer features (templates, settings parsing, better UX), we can validate behavior end-to-end by running the real `salad` CLI against the mock in `go test`.
+
+**Commit (code):** df30f497647dba1815c2667dfa67a9ce2821507d — "Mock server: implement AddAnalyzer/RemoveAnalyzer"
+
+### What I did
+- Added analyzer method constants and wiring in the mock exec pipeline:
+  - `MethodAddAnalyzer`, `MethodRemoveAnalyzer` (`internal/mock/saleae/exec.go`)
+- Added analyzer state to the mock runtime:
+  - `State.Analyzers` map and `NextAnalyzerID`
+  - `AnalyzerState` struct (`internal/mock/saleae/state.go`)
+- Extended YAML config + plan compiler:
+  - Defaults: `defaults.ids.analyzer_id_start` (default plan value: `10000`)
+  - Behavior: `behavior.AddAnalyzer.validate.*`, `behavior.RemoveAnalyzer.validate.*`
+  - Fault matching support:
+    - AddAnalyzer: match `capture_id` and/or `analyzer_name`
+    - RemoveAnalyzer: match `capture_id` and/or `analyzer_id`
+  (`internal/mock/saleae/config.go`, `internal/mock/saleae/plan.go`)
+- Implemented RPC handlers:
+  - `AddAnalyzer` allocates an id, stores state, returns `analyzer_id`
+  - `RemoveAnalyzer` deletes the stored analyzer and errors when missing (by default)
+  (`internal/mock/saleae/server.go`)
+
+### Why
+- Analyzer work will evolve quickly (templates, settings UX). Without mock support + tests, we risk regressions or accidental behavior drift.
+
+### What worked
+- The analyzer RPCs fit cleanly into the existing architecture (plan → exec wrapper → state).
+
+### What didn't work
+- N/A
+
+### What I learned
+- A CLI-level test is a great fit here: it validates the full stack (cobra flags → client wrappers → gRPC calls → mock behavior).
+
+### What was tricky to build
+- Keeping fault matchers strict: `StartCapture` does not support matchers, but analyzer methods do. Making that explicit prevents confusing YAML configs.
+
+### What warrants a second pair of eyes
+- Error code choices for “analyzer not found” in `RemoveAnalyzer` (currently `InvalidArgument`). We may want to align with real server behavior later, but tests should primarily lock down our chosen contract.
+
+### What should be done in the future
+- Add StartCapture tests and expand the CLI-vs-mock suite to cover more happy-path and error-path cases (exports, wait policies, etc.).
+
+---
+
+## Step 13: Add CLI-vs-mock integration test for analyzers
+
+This step adds a regression test that runs the real `salad` CLI against the mock server to validate analyzer add/remove flows. It exercises the same code paths users run in practice.
+
+**Commit (code):** ab14a1c7dc1ee7b8eb1de7f85b5b07b7f6649d45 — "Tests: run analyzer add/remove CLI against mock"
+
+### What I did
+- Added `internal/mock/saleae/analyzers_cli_test.go`:
+  - Starts mock server on a random port from `configs/mock/happy-path.yaml`
+  - Builds `./cmd/salad` to a temp binary
+  - Uses CLI to:
+    - create a capture via `capture load`
+    - add SPI analyzer using `configs/analyzers/spi.yaml`
+    - remove the analyzer
+    - assert removing it again fails (default behavior)
+- Verified with `go test ./... -count=1`
+
+### Why
+- This protects us from subtle integration regressions between CLI, client wrappers, and mock server behavior.
+
+### What worked
+- Test is deterministic and uses the repo’s real template file, which keeps settings parsing exercised too.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Building the CLI once (`go build -o <tmp> ./cmd/salad`) is much faster and less flaky than repeated `go run` invocations inside tests.
+
+### What was tricky to build
+- Computing module root reliably from `runtime.Caller` so tests can find `configs/*` without hardcoding absolute paths.
+
+### What warrants a second pair of eyes
+- Whether we want these CLI-vs-mock tests to remain “unit-test fast” or move into a slower integration-test tier later.
+
+### What should be done in the future
+- Add an additional test config that asserts error injection for analyzer methods using `faults:` matchers.
