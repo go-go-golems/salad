@@ -263,3 +263,51 @@ This step validates that the analyzer verbs work end-to-end against a **real** S
 ### Code review instructions
 - No code changes in this step; validate by re-running the commands above against a real server.
 
+---
+
+## Step 6: Create SPI template pack entry and verify it works
+
+This step turns the successful SPI smoke-test settings into a reusable template file under `configs/analyzers/`. The goal is to make analyzer setup reproducible without having to re-type `--set-int ...` flags every time.
+
+**Commit (code):** N/A — template + docs commit (see git history after this step is committed)
+
+### What I did
+- Added analyzer template pack directory:
+  - `configs/analyzers/README.md`
+  - `configs/analyzers/spi.yaml`
+- Verified the template against the real server:
+  - Started a manual capture (got `capture_id=4`)
+  - Added SPI analyzer using `--settings-yaml .../configs/analyzers/spi.yaml` (got `analyzer_id=10017`)
+  - Removed analyzer, stopped capture, closed capture
+
+### Why
+- The API does not expose schemas and error messages are not very actionable (“Invalid channel(s)”), so a known-good template is the fastest path to repeatable workflows.
+
+### What worked
+- `salad analyzer add` succeeded using only the SPI template file (no overrides needed when using channels 0..3).
+- `salad analyzer remove` succeeded with the returned analyzer id.
+
+### What didn't work
+- Initial attempt failed with `Cannot switch sessions while recording` because an earlier capture (from a failed remove attempt) was still recording. Cleaning up the stale capture resolved it.
+
+### What I learned
+- Template usage still depends on capture configuration (enabled channels). The template’s default channel indices assume a capture with at least digital channels 0..3 enabled.
+
+### What was tricky to build
+- Ensuring the “make sure it works” validation includes the full loop: start capture → add via template → remove → cleanup, and handling the “stale recording session” gotcha.
+
+### What warrants a second pair of eyes
+- Whether template defaults should be “safe but maybe not useful” (e.g., only Clock=0) vs “commonly useful” (Clock/MOSI/MISO/Enable = 0..3).
+
+### What should be done in the future
+- Add a SPI template variant that omits `Enable` (common SPI configs) if the real server accepts it.
+- Add templates for `I2C` and `Async Serial` once we have known-good keys from real-server smoke tests.
+
+### Code review instructions
+- Inspect templates:
+  - `configs/analyzers/spi.yaml`
+  - `configs/analyzers/README.md`
+- Validate with the real server:
+  - Start capture (ensure channels 0..3 are enabled)
+  - `salad analyzer add --settings-yaml .../configs/analyzers/spi.yaml`
+

@@ -20,3 +20,6 @@ Implemented analyzer verbs + settings parsing and validated against a real Logic
 - `CLI: add analyzer add/remove commands` (commit 99d3b4b004c3836b885daacd641dad748789d67d)
 - Real-server smoke test succeeded for `SPI` using `--set-int Clock=0 MOSI=1 MISO=2 Enable=3` (see diary Step 5; commit 5f123f3d169f8f090c959afee518b9b4d12a9a21 records the run)
 
+Added initial analyzer template pack (SPI) and verified it against the real server:
+- `configs/analyzers/spi.yaml` + `configs/analyzers/README.md` (see diary Step 6)
+

@@ -20,6 +20,6 @@ The goal here is a **small number of tasks**, each representing a meaningful cap
 
 ## Templates (optional, high leverage)
 
-- [ ] Add a minimal template pack (starting with SPI) based on the real-server smoke test:
+- [x] Add a minimal template pack (starting with SPI) based on the real-server smoke test:
   - `configs/analyzers/spi.yaml` (keys: `Clock`, `MOSI`, `MISO`, `Enable`)
 
