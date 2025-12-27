@@ -7,6 +7,7 @@ import (
 	pb "github.com/go-go-golems/salad/gen/saleae/automation"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -16,20 +17,41 @@ type Client struct {
 }
 
 func New(ctx context.Context, cfg Config) (*Client, error) {
-	if _, ok := ctx.Deadline(); !ok && cfg.Timeout > 0 {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	dialCtx := ctx
+	if _, ok := dialCtx.Deadline(); !ok && cfg.Timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
+		dialCtx, cancel = context.WithTimeout(dialCtx, cfg.Timeout)
 		defer cancel()
 	}
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		cfg.Addr(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "dial saleae automation grpc at %s", cfg.Addr())
+	}
+
+	// grpc.NewClient is lazy; preserve prior DialContext+WithBlock semantics by
+	// forcing a connection attempt and waiting until READY (or the context times out).
+	conn.Connect()
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			break
+		}
+		if state == connectivity.Shutdown {
+			_ = conn.Close()
+			return nil, errors.Errorf("grpc connection shutdown while connecting to %s", cfg.Addr())
+		}
+		if !conn.WaitForStateChange(dialCtx, state) {
+			_ = conn.Close()
+			return nil, errors.Wrapf(dialCtx.Err(), "connect to saleae automation grpc at %s", cfg.Addr())
+		}
 	}
 
 	return &Client{

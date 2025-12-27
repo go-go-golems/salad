@@ -62,7 +62,7 @@ var exportRawCsvCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		if err := c.ExportRawDataCsv(ctx, exportCaptureID, exportDirectory, ch, exportAnalogDownsample, exportIso8601Timestamps); err != nil {
 			return err
@@ -93,7 +93,7 @@ var exportRawBinaryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		if err := c.ExportRawDataBinary(ctx, exportCaptureID, exportDirectory, ch, exportAnalogDownsample); err != nil {
 			return err

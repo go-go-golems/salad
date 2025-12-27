@@ -438,6 +438,8 @@ func compileFaultMatcher(method Method, match *FaultMatchConfig) (func(any) bool
 	}
 
 	switch method {
+	case MethodGetAppInfo, MethodGetDevices:
+		return nil, errors.Errorf("fault matchers not supported for method %s", method)
 	case MethodLoadCapture:
 		if match.Filepath == nil {
 			return nil, nil

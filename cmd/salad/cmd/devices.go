@@ -30,7 +30,7 @@ var devicesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		devices, err := c.GetDevices(ctx, includeSimulationDevices)
 		if err != nil {

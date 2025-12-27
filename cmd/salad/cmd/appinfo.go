@@ -28,7 +28,7 @@ var appinfoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		info, err := c.GetAppInfo(ctx)
 		if err != nil {

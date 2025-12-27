@@ -225,7 +225,7 @@ func LoadConfig(path string) (Config, error) {
 	if err != nil {
 		return Config{}, errors.Wrapf(err, "open mock config %s", path)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	return LoadConfigFromReader(file)
 }

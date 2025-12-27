@@ -94,7 +94,7 @@ func StartMockServerFromYAML(t *testing.T, configPath string) (*Server, *client.
 	}
 
 	fullCleanup := func() {
-		clientConn.Close()
+		_ = clientConn.Close()
 		grpcServer.Stop()
 		_ = listener.Close()
 	}
