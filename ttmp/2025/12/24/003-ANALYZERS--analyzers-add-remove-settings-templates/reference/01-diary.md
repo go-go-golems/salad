@@ -156,3 +156,52 @@ This step introduces a dedicated settings parsing layer that converts JSON/YAML 
 - Validate with:
   - `go test ./... -count=1`
 
+---
+
+## Step 4: Add `salad analyzer add/remove` Cobra verbs
+
+This step adds the CLI surface for analyzers. The commands follow the established `salad` pattern (create client → call wrapper → print key/value output) and integrate the new settings parsing layer so settings can come from JSON/YAML plus typed overrides.
+
+**Commit (code):** 99d3b4b004c3836b885daacd641dad748789d67d — "CLI: add analyzer add/remove commands"
+
+### What I did
+- Added `cmd/salad/cmd/analyzer.go`:
+  - `salad analyzer add`:
+    - flags: `--capture-id`, `--name`, `--label`, `--settings-json`, `--settings-yaml`, `--set*`
+    - output: `analyzer_id=<id>`
+  - `salad analyzer remove`:
+    - flags: `--capture-id`, `--analyzer-id`
+    - output: `ok`
+- Wired analyzer subtree into `cmd/salad/cmd/root.go`
+- Ran:
+  - `gofmt -w cmd/salad/cmd/analyzer.go cmd/salad/cmd/root.go`
+  - `go test ./... -count=1`
+
+### Why
+- The CLI verbs are the user-facing API; once these compile, we can do real-server smoke tests immediately.
+
+### What worked
+- Commands compile and integrate cleanly with the existing root flags (`--host`, `--port`, `--timeout`).
+
+### What didn't work
+- N/A
+
+### What I learned
+- Avoided package-level variable collisions by using analyzer-specific flag variables (`analyzerCaptureID`, `analyzerID`, etc.) instead of reusing `captureID`.
+
+### What was tricky to build
+- Keeping flags ergonomic but explicit: typed overrides are supported without attempting complex type inference for `--set`.
+
+### What warrants a second pair of eyes
+- CLI UX consistency:
+  - flag names and error messages vs the capture/export commands
+  - merge precedence (file settings vs overrides)
+
+### What should be done in the future
+- Add `salad analyzer template ...` commands only after the core add/remove loop is stable.
+
+### Code review instructions
+- Start in `cmd/salad/cmd/analyzer.go` and scan the `RunE` logic for settings loading + overrides.
+- Validate with:
+  - `go test ./... -count=1`
+
