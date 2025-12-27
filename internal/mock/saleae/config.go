@@ -28,8 +28,9 @@ type GRPCDefaultsConfig struct {
 }
 
 type IDsDefaultsConfig struct {
-	CaptureIDStart uint64 `yaml:"capture_id_start,omitempty"`
-	Deterministic  *bool  `yaml:"deterministic,omitempty"`
+	CaptureIDStart  uint64 `yaml:"capture_id_start,omitempty"`
+	AnalyzerIDStart uint64 `yaml:"analyzer_id_start,omitempty"`
+	Deterministic   *bool  `yaml:"deterministic,omitempty"`
 }
 
 type TimingDefaultsConfig struct {
@@ -82,6 +83,8 @@ type BehaviorConfig struct {
 	StopCapture         StopCaptureBehaviorConfig         `yaml:"StopCapture,omitempty"`
 	WaitCapture         WaitCaptureBehaviorConfig         `yaml:"WaitCapture,omitempty"`
 	CloseCapture        CloseCaptureBehaviorConfig        `yaml:"CloseCapture,omitempty"`
+	AddAnalyzer         AddAnalyzerBehaviorConfig         `yaml:"AddAnalyzer,omitempty"`
+	RemoveAnalyzer      RemoveAnalyzerBehaviorConfig      `yaml:"RemoveAnalyzer,omitempty"`
 	ExportRawDataCsv    ExportRawDataCsvBehaviorConfig    `yaml:"ExportRawDataCsv,omitempty"`
 	ExportRawDataBinary ExportRawDataBinaryBehaviorConfig `yaml:"ExportRawDataBinary,omitempty"`
 }
@@ -101,6 +104,24 @@ type StartCaptureValidateConfig struct {
 
 type StartCaptureOnCallConfig struct {
 	CreateCapture *CaptureCreateConfig `yaml:"create_capture,omitempty"`
+}
+
+type AddAnalyzerBehaviorConfig struct {
+	Validate AddAnalyzerValidateConfig `yaml:"validate,omitempty"`
+}
+
+type AddAnalyzerValidateConfig struct {
+	RequireCaptureExists        *bool `yaml:"require_capture_exists,omitempty"`
+	RequireAnalyzerNameNonEmpty *bool `yaml:"require_analyzer_name_non_empty,omitempty"`
+}
+
+type RemoveAnalyzerBehaviorConfig struct {
+	Validate RemoveAnalyzerValidateConfig `yaml:"validate,omitempty"`
+}
+
+type RemoveAnalyzerValidateConfig struct {
+	RequireCaptureExists  *bool `yaml:"require_capture_exists,omitempty"`
+	RequireAnalyzerExists *bool `yaml:"require_analyzer_exists,omitempty"`
 }
 
 type LoadCaptureBehaviorConfig struct {
@@ -225,8 +246,10 @@ type FaultWhenConfig struct {
 }
 
 type FaultMatchConfig struct {
-	CaptureID *uint64 `yaml:"capture_id,omitempty"`
-	Filepath  *string `yaml:"filepath,omitempty"`
+	CaptureID    *uint64 `yaml:"capture_id,omitempty"`
+	Filepath     *string `yaml:"filepath,omitempty"`
+	AnalyzerID   *uint64 `yaml:"analyzer_id,omitempty"`
+	AnalyzerName *string `yaml:"analyzer_name,omitempty"`
 }
 
 type FaultRespondConfig struct {

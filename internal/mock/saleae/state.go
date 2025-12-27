@@ -58,9 +58,20 @@ type CaptureState struct {
 	Mode      CaptureMode
 }
 
+type AnalyzerState struct {
+	ID        uint64
+	CaptureID uint64
+	Name      string
+	Label     string
+	Settings  map[string]*pb.AnalyzerSettingValue
+	CreatedAt time.Time
+}
+
 type State struct {
-	AppInfo       *pb.AppInfo
-	Devices       []*pb.Device
-	Captures      map[uint64]*CaptureState
-	NextCaptureID uint64
+	AppInfo        *pb.AppInfo
+	Devices        []*pb.Device
+	Captures       map[uint64]*CaptureState
+	Analyzers      map[uint64]map[uint64]*AnalyzerState // capture_id -> analyzer_id -> state
+	NextCaptureID  uint64
+	NextAnalyzerID uint64
 }

@@ -347,6 +347,93 @@ func (s *Server) ExportRawDataBinary(ctx context.Context, req *pb.ExportRawDataB
 	return out.(*pb.ExportRawDataBinaryReply), nil
 }
 
+func (s *Server) AddAnalyzer(ctx context.Context, req *pb.AddAnalyzerRequest) (*pb.AddAnalyzerReply, error) {
+	out, err := s.exec(ctx, MethodAddAnalyzer, req, func(runtime *RuntimeContext) (any, error) {
+		captureID := req.GetCaptureId()
+		if captureID == 0 {
+			return nil, status.Error(codes.InvalidArgument, "AddAnalyzer: capture_id is required")
+		}
+
+		if runtime.Plan.Behavior.AddAnalyzer.RequireCaptureExists {
+			if _, err := runtime.State.captureFor(captureID, runtime.Plan.Defaults.StatusOnUnknownCaptureID); err != nil {
+				return nil, err
+			}
+		}
+
+		if runtime.Plan.Behavior.AddAnalyzer.RequireAnalyzerNameNonEmpty && req.GetAnalyzerName() == "" {
+			return nil, status.Error(codes.InvalidArgument, "AddAnalyzer: analyzer_name is required")
+		}
+
+		analyzerID := runtime.State.NextAnalyzerID
+		runtime.State.NextAnalyzerID++
+
+		if runtime.State.Analyzers[captureID] == nil {
+			runtime.State.Analyzers[captureID] = make(map[uint64]*AnalyzerState)
+		}
+
+		settingsCopy := make(map[string]*pb.AnalyzerSettingValue, len(req.GetSettings()))
+		for k, v := range req.GetSettings() {
+			settingsCopy[k] = v
+		}
+
+		runtime.State.Analyzers[captureID][analyzerID] = &AnalyzerState{
+			ID:        analyzerID,
+			CaptureID: captureID,
+			Name:      req.GetAnalyzerName(),
+			Label:     req.GetAnalyzerLabel(),
+			Settings:  settingsCopy,
+			CreatedAt: runtime.Clock.Now(),
+		}
+
+		return &pb.AddAnalyzerReply{AnalyzerId: analyzerID}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out.(*pb.AddAnalyzerReply), nil
+}
+
+func (s *Server) RemoveAnalyzer(ctx context.Context, req *pb.RemoveAnalyzerRequest) (*pb.RemoveAnalyzerReply, error) {
+	out, err := s.exec(ctx, MethodRemoveAnalyzer, req, func(runtime *RuntimeContext) (any, error) {
+		captureID := req.GetCaptureId()
+		if captureID == 0 {
+			return nil, status.Error(codes.InvalidArgument, "RemoveAnalyzer: capture_id is required")
+		}
+		analyzerID := req.GetAnalyzerId()
+		if analyzerID == 0 {
+			return nil, status.Error(codes.InvalidArgument, "RemoveAnalyzer: analyzer_id is required")
+		}
+
+		if runtime.Plan.Behavior.RemoveAnalyzer.RequireCaptureExists {
+			if _, err := runtime.State.captureFor(captureID, runtime.Plan.Defaults.StatusOnUnknownCaptureID); err != nil {
+				return nil, err
+			}
+		}
+
+		byCapture := runtime.State.Analyzers[captureID]
+		if byCapture == nil {
+			if runtime.Plan.Behavior.RemoveAnalyzer.RequireAnalyzerExists {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("RemoveAnalyzer: analyzer %d not found", analyzerID))
+			}
+			return &pb.RemoveAnalyzerReply{}, nil
+		}
+
+		if _, ok := byCapture[analyzerID]; !ok {
+			if runtime.Plan.Behavior.RemoveAnalyzer.RequireAnalyzerExists {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("RemoveAnalyzer: analyzer %d not found", analyzerID))
+			}
+			return &pb.RemoveAnalyzerReply{}, nil
+		}
+
+		delete(byCapture, analyzerID)
+		return &pb.RemoveAnalyzerReply{}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out.(*pb.RemoveAnalyzerReply), nil
+}
+
 func (runtime *RuntimeContext) blockUntilDone(capture *CaptureState) (*pb.WaitCaptureReply, error) {
 	if capture.Status == CaptureStatusCompleted {
 		return &pb.WaitCaptureReply{}, nil

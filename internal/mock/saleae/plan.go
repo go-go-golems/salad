@@ -24,6 +24,7 @@ type Plan struct {
 type DefaultsPlan struct {
 	StatusOnUnknownCaptureID codes.Code
 	CaptureIDStart           uint64
+	AnalyzerIDStart          uint64
 	WaitCapturePolicy        WaitCapturePolicy
 	WaitCaptureMaxBlock      time.Duration
 }
@@ -50,6 +51,8 @@ type BehaviorPlan struct {
 	StopCapture         StopCapturePlan
 	WaitCapture         WaitCapturePlan
 	CloseCapture        CloseCapturePlan
+	AddAnalyzer         AddAnalyzerPlan
+	RemoveAnalyzer      RemoveAnalyzerPlan
 	ExportRawDataCsv    ExportRawDataCsvPlan
 	ExportRawDataBinary ExportRawDataBinaryPlan
 }
@@ -110,6 +113,16 @@ type ExportRawDataBinaryPlan struct {
 	AnalogFilename       string
 }
 
+type AddAnalyzerPlan struct {
+	RequireCaptureExists        bool
+	RequireAnalyzerNameNonEmpty bool
+}
+
+type RemoveAnalyzerPlan struct {
+	RequireCaptureExists  bool
+	RequireAnalyzerExists bool
+}
+
 type FaultRule struct {
 	Method  Method
 	NthCall *int
@@ -129,6 +142,7 @@ func Compile(cfg Config) (*Plan, error) {
 	defaults := DefaultsPlan{
 		StatusOnUnknownCaptureID: codes.InvalidArgument,
 		CaptureIDStart:           1,
+		AnalyzerIDStart:          10000,
 		WaitCapturePolicy:        WaitCaptureImmediate,
 		WaitCaptureMaxBlock:      0,
 	}
@@ -145,6 +159,9 @@ func Compile(cfg Config) (*Plan, error) {
 	}
 	if cfg.Defaults.IDs.CaptureIDStart != 0 {
 		defaults.CaptureIDStart = cfg.Defaults.IDs.CaptureIDStart
+	}
+	if cfg.Defaults.IDs.AnalyzerIDStart != 0 {
+		defaults.AnalyzerIDStart = cfg.Defaults.IDs.AnalyzerIDStart
 	}
 	if cfg.Defaults.Timing.WaitCapturePolicy != "" {
 		policy, err := parseWaitCapturePolicy(cfg.Defaults.Timing.WaitCapturePolicy)
@@ -319,6 +336,14 @@ func compileBehavior(cfg Config, defaults DefaultsPlan) (BehaviorPlan, error) {
 		CloseCapture: CloseCapturePlan{
 			Mode: CloseCaptureDelete,
 		},
+		AddAnalyzer: AddAnalyzerPlan{
+			RequireCaptureExists:        pickBool(cfg.Behavior.AddAnalyzer.Validate.RequireCaptureExists, true),
+			RequireAnalyzerNameNonEmpty: pickBool(cfg.Behavior.AddAnalyzer.Validate.RequireAnalyzerNameNonEmpty, true),
+		},
+		RemoveAnalyzer: RemoveAnalyzerPlan{
+			RequireCaptureExists:  pickBool(cfg.Behavior.RemoveAnalyzer.Validate.RequireCaptureExists, true),
+			RequireAnalyzerExists: pickBool(cfg.Behavior.RemoveAnalyzer.Validate.RequireAnalyzerExists, true),
+		},
 		ExportRawDataCsv: ExportRawDataCsvPlan{
 			RequireCaptureExists:           pickBool(cfg.Behavior.ExportRawDataCsv.Validate.RequireCaptureExists, true),
 			DigitalFilename:                "digital.csv",
@@ -474,8 +499,57 @@ func compileFaultMatcher(method Method, match *FaultMatchConfig) (func(any) bool
 			// StartCapture doesn't have capture_id in request, so this doesn't make sense
 			return nil, errors.Errorf("fault matcher capture_id not supported for StartCapture")
 		}
+		if match.AnalyzerID != nil || match.AnalyzerName != nil || match.Filepath != nil {
+			return nil, errors.Errorf("fault matcher fields not supported for StartCapture")
+		}
 		// For now, no matchers supported for StartCapture
 		return nil, nil
+	case MethodAddAnalyzer:
+		// Support matching by capture_id and/or analyzer_name
+		var wantCaptureID *uint64
+		if match.CaptureID != nil {
+			wantCaptureID = match.CaptureID
+		}
+		var wantName *string
+		if match.AnalyzerName != nil {
+			wantName = match.AnalyzerName
+		}
+		return func(req any) bool {
+			reqTyped, ok := req.(*pb.AddAnalyzerRequest)
+			if !ok {
+				return false
+			}
+			if wantCaptureID != nil && reqTyped.GetCaptureId() != *wantCaptureID {
+				return false
+			}
+			if wantName != nil && reqTyped.GetAnalyzerName() != *wantName {
+				return false
+			}
+			return true
+		}, nil
+	case MethodRemoveAnalyzer:
+		// Support matching by capture_id and/or analyzer_id
+		var wantCaptureID *uint64
+		if match.CaptureID != nil {
+			wantCaptureID = match.CaptureID
+		}
+		var wantAnalyzerID *uint64
+		if match.AnalyzerID != nil {
+			wantAnalyzerID = match.AnalyzerID
+		}
+		return func(req any) bool {
+			reqTyped, ok := req.(*pb.RemoveAnalyzerRequest)
+			if !ok {
+				return false
+			}
+			if wantCaptureID != nil && reqTyped.GetCaptureId() != *wantCaptureID {
+				return false
+			}
+			if wantAnalyzerID != nil && reqTyped.GetAnalyzerId() != *wantAnalyzerID {
+				return false
+			}
+			return true
+		}, nil
 	case MethodLoadCapture:
 		if match.Filepath == nil {
 			return nil, nil

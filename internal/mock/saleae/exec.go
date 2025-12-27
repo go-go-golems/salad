@@ -18,6 +18,8 @@ const (
 	MethodStopCapture         Method = "StopCapture"
 	MethodWaitCapture         Method = "WaitCapture"
 	MethodCloseCapture        Method = "CloseCapture"
+	MethodAddAnalyzer         Method = "AddAnalyzer"
+	MethodRemoveAnalyzer      Method = "RemoveAnalyzer"
 	MethodExportRawDataCsv    Method = "ExportRawDataCsv"
 	MethodExportRawDataBinary Method = "ExportRawDataBinary"
 )
@@ -31,6 +33,8 @@ var AllMethods = []Method{
 	MethodStopCapture,
 	MethodWaitCapture,
 	MethodCloseCapture,
+	MethodAddAnalyzer,
+	MethodRemoveAnalyzer,
 	MethodExportRawDataCsv,
 	MethodExportRawDataBinary,
 }
@@ -132,10 +136,12 @@ func (s *Server) maybeFault(method Method, req any, callN int) error {
 
 func newState(plan *Plan, clock Clock) State {
 	state := State{
-		AppInfo:       plan.Fixtures.AppInfo,
-		Devices:       append([]*pb.Device{}, plan.Fixtures.Devices...),
-		Captures:      make(map[uint64]*CaptureState),
-		NextCaptureID: plan.Defaults.CaptureIDStart,
+		AppInfo:        plan.Fixtures.AppInfo,
+		Devices:        append([]*pb.Device{}, plan.Fixtures.Devices...),
+		Captures:       make(map[uint64]*CaptureState),
+		Analyzers:      make(map[uint64]map[uint64]*AnalyzerState),
+		NextCaptureID:  plan.Defaults.CaptureIDStart,
+		NextAnalyzerID: plan.Defaults.AnalyzerIDStart,
 	}
 
 	var maxCaptureID uint64
