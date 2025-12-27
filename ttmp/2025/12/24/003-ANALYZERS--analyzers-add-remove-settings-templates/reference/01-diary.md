@@ -311,3 +311,44 @@ This step turns the successful SPI smoke-test settings into a reusable template 
   - Start capture (ensure channels 0..3 are enabled)
   - `salad analyzer add --settings-yaml .../configs/analyzers/spi.yaml`
 
+---
+
+## Step 7: Recreate multiple SPI analyzers on an existing stopped capture (UI verification)
+
+This step validates the “real workflow” you’ll use day-to-day: keep a capture open in Logic 2, ensure it is **stopped** (not recording), then add multiple analyzers with sensible labels so they’re easy to recognize in the UI.
+
+**Commit (code):** N/A — runtime operation only
+
+### What I did
+- Ensured capture 6 was stopped:
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 5s capture stop --capture-id 6`
+- Added three SPI analyzers using the SPI template:
+  - `SPI: CLK0 MOSI1 MISO2 CS3` → `analyzer_id=10028`
+  - `SPI: flash` → `analyzer_id=10031`
+  - `SPI: sensor` → `analyzer_id=10034`
+
+### Why
+- When you’re verifying in the Logic 2 UI, distinct labels make it obvious which analyzer was created by which template/command.
+
+### What worked
+- All three analyzers were created successfully on the stopped capture without session/recording issues.
+
+### What didn't work
+- N/A
+
+### What I learned
+- As long as the capture is **stopped**, adding analyzers is stable and doesn’t trip “switch sessions while recording” errors.
+
+### What was tricky to build
+- The main gotcha is operational: if a prior test leaves a capture recording, subsequent operations can fail in confusing ways. Stopping before analyzer work avoids that.
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- Add a small helper command or script that “stop capture if running” before analyzer operations to avoid this class of UI confusion.
+
+### Code review instructions
+- N/A (no code changes). Verify in the Logic 2 UI:
+  - In the Analyzers panel, you should see labels: `SPI: CLK0 MOSI1 MISO2 CS3`, `SPI: flash`, `SPI: sensor`.
+
