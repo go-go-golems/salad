@@ -1,0 +1,6 @@
+title: "📝 Update mock server diary and tasks"
+description: |
+  - record Step 6 diary details and CLI validation steps
+  - update changelog and task checklist for docs/examples
+  - Tests:
+    - ⚠️ not run (documentation updates only)

@@ -40,3 +40,24 @@ Step 4: Added a general method doc for mapping YAML DSL to Go structs and compos
 - /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/analysis/04-mapping-yaml-dsl-to-go-structures-validation-and-behavior-composition.md — Mapping method and pseudocode
 - /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/reference/01-diary.md — Diary Step 4
 
+
+## 2025-12-27
+
+Step 5: implement YAML-driven mock server pipeline (commit 6e70b3d)
+
+### Related Files
+
+- /workspace/salad/internal/mock/saleae/plan.go — Compile YAML configs into runtime plans and defaults
+- /workspace/salad/internal/mock/saleae/server.go — Mock Manager RPC handlers and state transitions
+
+
+## 2025-12-27
+
+Step 6: add salad-mock CLI, docs, and scenarios (commit 3b13c72)
+
+### Related Files
+
+- /workspace/salad/cmd/salad-mock/cmd/root.go — Run mock server from YAML
+- /workspace/salad/configs/mock/happy-path.yaml — Documented example scenario
+- /workspace/salad/pkg/doc/mock-server-user-guide.md — User-facing mock server guide
+

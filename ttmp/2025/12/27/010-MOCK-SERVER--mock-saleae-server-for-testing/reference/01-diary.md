@@ -12,13 +12,47 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: README.md
+      Note: Links to mock server docs
+    - Path: cmd/salad-mock/cmd/root.go
+      Note: Cobra command to run mock server from YAML
+    - Path: cmd/salad-mock/main.go
+      Note: Entry point for mock server CLI
+    - Path: configs/mock/faults.yaml
+      Note: Example fault injection scenario
+    - Path: configs/mock/happy-path.yaml
+      Note: Example happy-path mock scenario
+    - Path: go.mod
+      Note: Added yaml dependency for config parsing
+    - Path: go.sum
+      Note: Added yaml dependency checksums
+    - Path: internal/mock/saleae/clock.go
+      Note: Clock abstraction for deterministic timing
+    - Path: internal/mock/saleae/config.go
+      Note: YAML config schema and loader used for scenarios
+    - Path: internal/mock/saleae/exec.go
+      Note: Shared exec pipeline and server scaffolding
+    - Path: internal/mock/saleae/helper.go
+      Note: YAML-driven mock server test helper
+    - Path: internal/mock/saleae/plan.go
+      Note: Compile step and defaults normalization for mock server runtime
+    - Path: internal/mock/saleae/server.go
+      Note: gRPC handlers and capture lifecycle behavior
+    - Path: internal/mock/saleae/side_effects.go
+      Note: Pluggable file side effects for save/export
+    - Path: internal/mock/saleae/state.go
+      Note: State and enums for captures/devices
+    - Path: pkg/doc/mock-server-developer-guide.md
+      Note: Developer guide for extending the mock server
+    - Path: pkg/doc/mock-server-user-guide.md
+      Note: User guide for running the mock server
 ExternalSources: []
-Summary: "Step-by-step narrative of designing and implementing the mock Saleae server, documenting decisions, learnings, and challenges."
+Summary: Step-by-step narrative of designing and implementing the mock Saleae server, documenting decisions, learnings, and challenges.
 LastUpdated: 2025-12-27T00:00:00Z
-WhatFor: ""
-WhenToUse: ""
 ---
+
+
 
 # Diary: Mock Saleae Server Implementation
 
@@ -569,3 +603,120 @@ This step focused on documenting a reusable engineering approach for turning our
 
 - Start with `analysis/04-mapping-yaml-dsl-to-go-structures-validation-and-behavior-composition.md`
 - Cross-check against `analysis/03-mock-server-yaml-dsl-configurable-behavior-scenarios.md` to ensure the DSL keys map cleanly into the proposed Go structs
+
+---
+
+## Step 5: Implement YAML-driven mock server core (config, plan, exec, RPCs)
+
+This step turned the DSL and runtime plan design into real code. I implemented the YAML config loader, compilation into a runtime plan, and the core mock gRPC server that runs every RPC through a shared exec pipeline. This unlocked a working mock server that is fully scenario-driven and supports all CLI-required RPCs.
+
+**Commit (code):** 6e70b3d — "✨ Add YAML-driven mock Saleae server"
+
+### What I did
+- Added `internal/mock/saleae` with config structs, plan compiler, and runtime state.
+- Implemented `Server` with a shared exec wrapper and handlers for all CLI-required RPCs.
+- Implemented deterministic IDs, clock injection, capture lifecycle state, and fault injection.
+- Added pluggable side effects (no-op vs file placeholders) and export/save behaviors.
+- Added a YAML-driven test helper to start the mock server on a random port.
+
+### Why
+- We need a mock server that can be configured via YAML scenarios to support many test cases without hardcoding behavior in Go.
+- The exec pipeline keeps RPC handlers consistent and makes fault injection and validation uniform.
+- Deterministic IDs and a clock abstraction are essential for predictable, non-flaky tests.
+
+### What worked
+- Strict YAML decoding (`KnownFields`) catches config typos early.
+- The plan compiler centralizes defaults and type normalization, keeping handlers clean.
+- The mock server compiles and runs through `go test` successfully.
+
+### What didn't work
+- The first `go test ./...` run appeared to hang with no output; I interrupted it and re-ran with `timeout 60s` to avoid stalling the session.
+
+### What I learned
+- gRPC status code parsing needed a custom map; `codes.Code_value` doesn’t exist in the grpc package.
+- Centralizing side effects behind an interface makes it easy to switch between no-op and file output behavior.
+
+### What was tricky to build
+- Mapping YAML enums to Go enums in a safe, user-friendly way without leaking YAML concerns into handlers.
+- Implementing a `WaitCapture` policy that is deterministic and non-blocking while still modeling “running vs completed” semantics.
+
+### What warrants a second pair of eyes
+- The `WaitCapture` policy behavior (especially `block_until_done`) should be reviewed to ensure it matches expectations.
+- Fault matcher coverage: request-field matchers are intentionally minimal (capture_id, filepath). Confirm this is sufficient for initial tests.
+
+### What should be done in the future
+- Add table-driven integration tests that run the CLI against YAML scenarios.
+- Add example scenario YAML files under `configs/mock/` to keep docs and tests aligned.
+
+### Code review instructions
+- Start in `internal/mock/saleae/plan.go` for the compiler and defaults.
+- Review the exec pipeline in `internal/mock/saleae/exec.go`.
+- Inspect RPC handlers and state transitions in `internal/mock/saleae/server.go`.
+- Review side effects in `internal/mock/saleae/side_effects.go`.
+
+### Technical details
+- Config loader: `LoadConfig` uses `yaml.Decoder` with `KnownFields(true)`.
+- Plan compiler: `Compile` validates version, normalizes enums, applies defaults, and compiles faults.
+- Exec pipeline: increments call counters, applies fault injection, and routes to per-method logic.
+
+### What I'd do differently next time
+- Run the initial `go test` with a timeout to avoid waiting on a hang.
+
+---
+
+## Step 6: Add mock server docs, examples, and validate CLI against the server
+
+This step focused on usability: I added a runnable `salad-mock` CLI, example YAML scenarios, and documentation for both users and developers. I also installed `tmux` (required by the project guidelines) so I could run the mock server and validate the `salad` CLI against it.
+
+**Commit (code):** 3b13c72 — "✨ Add mock server CLI and docs"
+
+### What I did
+- Added `cmd/salad-mock` to run the mock server from a YAML config.
+- Added example scenarios under `configs/mock/` for happy path and failure injection.
+- Wrote user and developer guides in `pkg/doc/` and linked them from `README.md`.
+- Installed `tmux` and ran `salad appinfo` + `salad devices` against the mock server.
+
+### Why
+- Users need a documented way to run the mock server and point the CLI at it.
+- Example scenario files reduce setup friction and make it easier to write tests.
+- The project guidelines require `tmux` for running servers interactively, so it needed to be installed.
+
+### What worked
+- `salad-mock` starts the server cleanly from a YAML file.
+- The CLI successfully connected to the mock server and returned expected app info and device output.
+
+### What didn't work
+- `tmux` was not installed initially, so I had to install it via `apt-get` before running the server.
+- `apt-get update` warned about a 403 from `https://mise.jdx.dev/deb`; the rest of the package indexes updated normally.
+- The mock server exited before `tmux kill-session` ran, so the kill command reported no running server.
+
+### What I learned
+- Installing `tmux` in this environment is straightforward but requires `apt-get update` first.
+- The mock server is responsive enough for quick CLI smoke tests (appinfo/devices).
+
+### What was tricky to build
+- Ensuring the new CLI uses cobra and the existing logging conventions while keeping the surface area minimal.
+- Documenting both the user and developer flows without drifting from the YAML DSL design.
+
+### What warrants a second pair of eyes
+- Review the documentation flow to confirm it matches expected CLI usage and test workflows.
+- Confirm the `salad-mock` flags and defaults align with how tests should invoke the mock server.
+
+### What should be done in the future
+- Add table-driven CLI integration tests using the scenario YAML files.
+- Expand example scenarios to cover `WaitCapture` running vs completed behavior.
+
+### Code review instructions
+- Start with `cmd/salad-mock/cmd/root.go` for server startup logic.
+- Review example scenarios in `configs/mock/`.
+- Read the guides in `pkg/doc/mock-server-user-guide.md` and `pkg/doc/mock-server-developer-guide.md`.
+
+### Technical details
+- Command used to start the mock server:
+  - `go run ./cmd/salad-mock --config configs/mock/happy-path.yaml --port 10431`
+- CLI validation commands:
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10431 appinfo`
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10431 devices`
+
+### What I'd do differently next time
+- Install `tmux` before starting CLI validation to avoid retry steps.
