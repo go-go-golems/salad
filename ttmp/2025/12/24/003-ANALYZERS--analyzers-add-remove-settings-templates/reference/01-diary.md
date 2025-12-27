@@ -66,3 +66,45 @@ This step bootstraps the diary and sets up an execution cadence: implement in sm
 ### Code review instructions
 - Start at `proto/saleae/grpc/saleae.proto` around `AddAnalyzerRequest` to confirm request/response contracts.
 
+---
+
+## Step 2: Add analyzer RPC wrappers to the Saleae client
+
+This step adds small, typed wrappers to the Go client so the CLI can call analyzer RPCs without duplicating proto details at the command layer. The goal is to mirror the existing capture/export client style: validate inputs, call the gRPC method, and wrap errors with a stable prefix.
+
+**Commit (code):** a574108c310947e3d47b71ad697d997fa22838f9 — "Saleae client: add AddAnalyzer/RemoveAnalyzer"
+
+### What I did
+- Added client methods in `internal/saleae/client.go`:
+  - `AddAnalyzer(ctx, captureID, analyzerName, analyzerLabel, settings) (uint64, error)`
+  - `RemoveAnalyzer(ctx, captureID, analyzerID) error`
+- Ran:
+  - `gofmt -w internal/saleae/client.go`
+  - `go test ./... -count=1`
+
+### Why
+- Keeps Cobra commands simple: the CLI should build inputs and delegate RPC calling + error wrapping to the client layer.
+
+### What worked
+- `go test ./...` stayed green after adding the methods.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The analyzer settings map type is `map[string]*pb.AnalyzerSettingValue` (typed oneof), so we’ll need a dedicated parsing layer for JSON/YAML + typed flag overrides.
+
+### What was tricky to build
+- Ensuring `settings` behaves predictably when omitted: we normalize `nil` to an empty map to avoid accidental nil-map surprises.
+
+### What warrants a second pair of eyes
+- Error message consistency (prefixes + argument naming) vs existing client methods (capture/export).
+
+### What should be done in the future
+- Add unit tests for settings parsing (once the parsing package exists). The client wrappers themselves are thin enough that tests are optional.
+
+### Code review instructions
+- Start in `internal/saleae/client.go`, search for `AddAnalyzer(` and `RemoveAnalyzer(`.
+- Validate with:
+  - `go test ./... -count=1`
+
