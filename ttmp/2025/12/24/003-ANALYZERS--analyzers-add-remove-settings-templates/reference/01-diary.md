@@ -108,3 +108,51 @@ This step adds small, typed wrappers to the Go client so the CLI can call analyz
 - Validate with:
   - `go test ./... -count=1`
 
+---
+
+## Step 3: Implement analyzer settings parsing (JSON/YAML + typed overrides)
+
+This step introduces a dedicated settings parsing layer that converts JSON/YAML settings into the proto’s typed oneof map (`map[string]*pb.AnalyzerSettingValue`). It also supports explicit typed overrides via `key=value` strings so the CLI can avoid “type guessing” for ad-hoc overrides.
+
+**Commit (code):** e8a1d3c254871a18feb268458103995576a1e61e — "Config: parse analyzer settings (json/yaml + typed overrides)"
+
+### What I did
+- Added `internal/config/analyzer_settings.go`:
+  - Load from JSON (`.json`) and YAML (`.yaml/.yml`)
+  - Accept either a top-level mapping or a `{settings: {...}}` wrapper
+  - Convert scalars to `AnalyzerSettingValue` (string/bool/int64/double)
+  - Apply typed overrides (`--set`, `--set-bool`, `--set-int`, `--set-float`) as last-write-wins
+- Added unit tests in `internal/config/analyzer_settings_test.go`
+- Ran:
+  - `gofmt -w internal/config/*.go`
+  - `go test ./... -count=1`
+
+### Why
+- The Saleae API does not expose analyzer schemas; we need a deterministic and reproducible way to provide settings as code.
+- A dedicated parser keeps Cobra command code small and reviewable.
+
+### What worked
+- Unit tests cover both JSON and YAML inputs (top-level and `settings:` wrapper) and typed overrides.
+
+### What didn't work
+- N/A
+
+### What I learned
+- JSON numbers decode as `float64`, so we treat “integral floats” as `int64_value` and non-integral as `double_value`.
+
+### What was tricky to build
+- Balancing “no type guessing” with practical JSON/YAML decoding: file-based settings inevitably carry types, so we keep guessing limited to “int vs double for numeric scalars”.
+
+### What warrants a second pair of eyes
+- The numeric coercion rules (float → int64 when integral) and whether they match what we want long-term.
+
+### What should be done in the future
+- If numeric coercion ever becomes a compatibility hazard, lock it down explicitly in docs/tests as a contract (or require explicit typing in settings files).
+
+### Code review instructions
+- Start in `internal/config/analyzer_settings.go`:
+  - `LoadAnalyzerSettings*`
+  - `ApplyAnalyzerSettingOverrides`
+- Validate with:
+  - `go test ./... -count=1`
+
