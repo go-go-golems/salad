@@ -61,3 +61,13 @@ Step 6: add salad-mock CLI, docs, and scenarios (commit 3b13c72)
 - /workspace/salad/configs/mock/happy-path.yaml — Documented example scenario
 - /workspace/salad/pkg/doc/mock-server-user-guide.md — User-facing mock server guide
 
+
+## 2025-12-27
+
+Step 7: guard against OK status on unknown captures
+
+### Related Files
+
+- /workspace/salad/internal/mock/saleae/plan.go — Compile-time validation for status_on_unknown_capture_id
+- /workspace/salad/internal/mock/saleae/server.go — Runtime guard against nil capture
+

@@ -36,9 +36,13 @@ RelatedFiles:
     - Path: internal/mock/saleae/helper.go
       Note: YAML-driven mock server test helper
     - Path: internal/mock/saleae/plan.go
-      Note: Compile step and defaults normalization for mock server runtime
+      Note: |-
+        Compile step and defaults normalization for mock server runtime
+        Reject OK status_on_unknown_capture_id to avoid nil captures
     - Path: internal/mock/saleae/server.go
-      Note: gRPC handlers and capture lifecycle behavior
+      Note: |-
+        gRPC handlers and capture lifecycle behavior
+        Defensive capture lookup when status is OK
     - Path: internal/mock/saleae/side_effects.go
       Note: Pluggable file side effects for save/export
     - Path: internal/mock/saleae/state.go
@@ -51,6 +55,7 @@ ExternalSources: []
 Summary: Step-by-step narrative of designing and implementing the mock Saleae server, documenting decisions, learnings, and challenges.
 LastUpdated: 2025-12-27T00:00:00Z
 ---
+
 
 
 
@@ -720,3 +725,49 @@ This step focused on usability: I added a runnable `salad-mock` CLI, example YAM
 
 ### What I'd do differently next time
 - Install `tmux` before starting CLI validation to avoid retry steps.
+
+---
+
+## Step 7: Harden unknown capture handling to avoid nil deref
+
+This step addresses a safety hole in `captureFor`: if the status-on-unknown-capture was set to `OK`, missing captures could return `(nil, nil)` and later dereference crashes. The fix rejects `OK` at compile time and ensures a defensive error path in the capture lookup, which prevents nil deref even if a bad config slips through.
+
+**Commit (code):** <pending>
+
+### What I did
+- Rejected `defaults.grpc.status_on_unknown_capture_id: OK` during `Compile`.
+- Added a defensive fallback in `captureFor` to return an error when the status is `OK`.
+
+### Why
+- Returning `(nil, nil)` for missing captures causes panics in RPC handlers.
+- Guardrails ensure invalid configs fail fast and runtime stays safe.
+
+### What worked
+- The compiler now blocks unsafe configs, and `captureFor` no longer yields a nil capture with no error.
+
+### What didn't work
+- `timeout 60s go test ./...` exited with status 124 (timeout) in this run.
+
+### What I learned
+- Handling “OK” codes in error paths needs explicit guardrails to prevent nil deref behavior.
+
+### What was tricky to build
+- Ensuring the fix is defensive in both compile-time validation and runtime lookup logic.
+
+### What warrants a second pair of eyes
+- Confirm that rejecting `OK` aligns with expectations for YAML DSL validation.
+- Verify that the new fallback error won’t mask a desired behavior in edge cases.
+
+### What should be done in the future
+- Consider adding a unit test that validates `Compile` rejects `OK` and `captureFor` behaves safely.
+
+### Code review instructions
+- Check `compile` validation in `internal/mock/saleae/plan.go`.
+- Review `captureFor` guard in `internal/mock/saleae/server.go`.
+
+### Technical details
+- Compile-time guard: error when `defaults.grpc.status_on_unknown_capture_id` is `OK`.
+- Runtime guard: return `InvalidArgument` when missing capture and status is `OK`.
+
+### What I'd do differently next time
+- Add a small test that asserts compile-time rejection and avoids relying on runtime fallbacks.

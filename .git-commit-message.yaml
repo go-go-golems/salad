@@ -1,6 +1,6 @@
-title: "📝 Update mock server diary and tasks"
+title: "🐛 Guard unknown capture status handling"
 description: |
-  - record Step 6 diary details and CLI validation steps
-  - update changelog and task checklist for docs/examples
+  - reject OK status_on_unknown_capture_id at compile time
+  - add runtime guard to avoid nil capture deref on missing IDs
   - Tests:
-    - ⚠️ not run (documentation updates only)
+    - ⚠️ `timeout 60s go test ./...` (timed out: exit status 124)

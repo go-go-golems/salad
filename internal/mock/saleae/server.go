@@ -295,6 +295,9 @@ func (state *State) captureFor(captureID uint64, missingStatus codes.Code) (*Cap
 	}
 	capture, ok := state.Captures[captureID]
 	if !ok {
+		if missingStatus == codes.OK {
+			return nil, status.Error(codes.InvalidArgument, "capture not found")
+		}
 		return nil, captureStatusError(missingStatus, captureID)
 	}
 	return capture, nil

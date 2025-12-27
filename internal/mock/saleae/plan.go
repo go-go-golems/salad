@@ -132,6 +132,9 @@ func Compile(cfg Config) (*Plan, error) {
 		if err != nil {
 			return nil, err
 		}
+		if code == codes.OK {
+			return nil, errors.New("defaults.grpc.status_on_unknown_capture_id cannot be OK")
+		}
 		defaults.StatusOnUnknownCaptureID = code
 	}
 	if cfg.Defaults.IDs.CaptureIDStart != 0 {
