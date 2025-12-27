@@ -241,6 +241,56 @@ func (c *Client) ExportRawDataBinary(
 	return errors.Wrap(err, "ExportRawDataBinary RPC")
 }
 
+func (c *Client) AddAnalyzer(
+	ctx context.Context,
+	captureID uint64,
+	analyzerName string,
+	analyzerLabel string,
+	settings map[string]*pb.AnalyzerSettingValue,
+) (uint64, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return 0, errors.New("AddAnalyzer: capture-id must be non-zero")
+	}
+	if analyzerName == "" {
+		return 0, errors.New("AddAnalyzer: analyzer-name is required")
+	}
+	if settings == nil {
+		settings = map[string]*pb.AnalyzerSettingValue{}
+	}
+
+	reply, err := c.manager.AddAnalyzer(ctx, &pb.AddAnalyzerRequest{
+		CaptureId:     captureID,
+		AnalyzerName:  analyzerName,
+		AnalyzerLabel: analyzerLabel,
+		Settings:      settings,
+	})
+	if err != nil {
+		return 0, errors.Wrap(err, "AddAnalyzer RPC")
+	}
+	return reply.GetAnalyzerId(), nil
+}
+
+func (c *Client) RemoveAnalyzer(ctx context.Context, captureID uint64, analyzerID uint64) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("RemoveAnalyzer: capture-id must be non-zero")
+	}
+	if analyzerID == 0 {
+		return errors.New("RemoveAnalyzer: analyzer-id must be non-zero")
+	}
+
+	_, err := c.manager.RemoveAnalyzer(ctx, &pb.RemoveAnalyzerRequest{
+		CaptureId:  captureID,
+		AnalyzerId: analyzerID,
+	})
+	return errors.Wrap(err, "RemoveAnalyzer RPC")
+}
+
 // DialTimeout is retained for future use (eg separate dial/RPC timeouts).
 // For now, Config.Timeout is used for both.
 var DialTimeout = 0 * time.Second
