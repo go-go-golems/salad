@@ -85,12 +85,99 @@ Implementation detail: templates are **our** conventions, not Saleae’s API.
 - If a template is used:
   - load template → merge overrides → build pb map
 
+## Mock server support (to test analyzers without Logic 2)
+
+To test `salad analyzer add/remove` reliably in CI, extend the mock Saleae gRPC server (ticket 010-MOCK-SERVER) to implement analyzer RPCs and track analyzer state in-memory.
+
+### Required RPCs to implement in the mock server
+
+- `Manager.AddAnalyzer(AddAnalyzerRequest) returns (AddAnalyzerReply)`
+- `Manager.RemoveAnalyzer(RemoveAnalyzerRequest) returns (RemoveAnalyzerReply)`
+
+These should follow the existing mock server “exec pipeline” pattern (fault injection + plan + state) used by capture and export RPCs.
+
+### Minimal analyzer state model (mock)
+
+Add a simple in-memory model keyed by `(capture_id, analyzer_id)`:
+
+- `AnalyzerState`:
+  - `CaptureID uint64`
+  - `AnalyzerID uint64` (or string, but prefer uint64 for parity with proto)
+  - `AnalyzerName string`
+  - `AnalyzerLabel string`
+  - `Settings map[string]*pb.AnalyzerSettingValue` (store the request map)
+  - `CreatedAt time.Time` (optional; useful for debugging)
+
+Server state needs:
+
+- `NextAnalyzerID uint64` (deterministic when configured)
+- `Analyzers map[uint64]map[uint64]*AnalyzerState` (captures → analyzers)
+
+### Behavior + validation knobs (YAML DSL)
+
+Add YAML behavior sections mirroring existing mock patterns (validate + on_call + defaults):
+
+- `behavior.AddAnalyzer`:
+  - validate:
+    - `require_capture_exists: true|false`
+    - `require_analyzer_name_non_empty: true|false`
+  - on_call:
+    - `create_analyzer:` (optional; allows forcing returned analyzer_id, or controlling behavior)
+      - `analyzer_id_start:` (optional if we want separate namespace)
+
+- `behavior.RemoveAnalyzer`:
+  - validate:
+    - `require_capture_exists: true|false`
+    - `require_analyzer_exists: true|false`
+  - on_call:
+    - `delete: true|false` (or “mark removed”; for now delete is fine)
+
+Fault injection support should include:
+
+- Always error on method
+- Error Nth call
+- Matchers:
+  - `capture_id`
+  - `analyzer_id` (for RemoveAnalyzer)
+  - optional: `analyzer_name` (for AddAnalyzer) to simulate per-analyzer failures
+
+### Happy-path semantics (mock)
+
+- **AddAnalyzer**:
+  - Validate capture exists (unless disabled)
+  - Allocate `analyzer_id` from `NextAnalyzerID` and store state
+  - Return `AddAnalyzerReply{ analyzer_id: <id> }` (or whatever the proto reply field is)
+
+- **RemoveAnalyzer**:
+  - Validate capture exists (unless disabled)
+  - Validate analyzer exists (unless disabled)
+  - Delete from map
+  - Return empty success reply
+
+### Test strategy (against mock)
+
+Add table-driven integration tests that run the CLI against the mock server:
+
+- Setup:
+  - Start mock server from YAML scenario with:
+    - one device
+    - capture fixture (or call `StartCapture` / `LoadCapture` first)
+  - Use deterministic IDs
+
+- Cases:
+  - Add analyzer success: returns analyzer_id, can remove it
+  - Remove analyzer not found: returns configured error code/message
+  - Add analyzer with missing capture: returns error (when require_capture_exists=true)
+  - Optional: validate settings map round-trip (server stores the settings as received)
+
 ### Files likely to change/add
 
 - `cmd/salad/cmd/analyzer.go` (new Cobra subtree)
 - `internal/saleae/client.go` (add `AddAnalyzer`, `RemoveAnalyzer` wrappers)
 - `internal/config/analyzer_settings.go` (parse settings files/flags)
 - `configs/analyzers/` (templates; optional)
+  - Mock support: `internal/mock/saleae/*` (new analyzer state + RPCs)
+  - Mock scenarios: `configs/mock/*` (add analyzer-focused YAML scenarios)
 
 ### Error UX
 
@@ -104,6 +191,8 @@ Implementation detail: templates are **our** conventions, not Saleae’s API.
   - file parsing, typed overrides, merge rules
 - Manual test:
   - capture load → add SPI analyzer with known-good template → export table (once implemented)
+ - Mock test:
+  - Start mock server → load/start capture → add/remove analyzer (table-driven, deterministic)
 
 ## Open questions / decisions
 
