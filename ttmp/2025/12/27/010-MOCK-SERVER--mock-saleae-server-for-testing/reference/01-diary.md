@@ -128,7 +128,7 @@ This step involved analyzing the existing client code to understand how it conne
 
 **RPC Implementation:**
 - All RPCs take `context.Context` and request proto, return reply proto and error
-- Use `status.Error(codes.XXX, "message")` for gRPC errors, not Go errors
+- Use `status.Error(codes.<CODE>, "message")` for gRPC errors, not Go errors
 - Embed `UnimplementedManagerServer` by value (not pointer) for forward compatibility
 - Only implement RPCs we need—unimplemented ones return "not implemented" error
 

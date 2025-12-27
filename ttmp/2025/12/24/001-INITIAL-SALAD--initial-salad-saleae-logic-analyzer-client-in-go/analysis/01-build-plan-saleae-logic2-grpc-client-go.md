@@ -67,7 +67,7 @@ salad/
 
 Notes:
 - We keep `proto/` and `gen/` at repo root so the generated import path is stable.
-- We’ll keep `cmd/XXX/` intact (template), but the supported binary will be `cmd/salad`.
+- We’ll keep `cmd/salad/` as the supported binary.
 
 ## Proto + generation strategy
 
