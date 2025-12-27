@@ -4,12 +4,14 @@ all: gifs
 
 VERSION=v0.1.14
 
-TAPES=$(shell ls doc/vhs/*tape)
+GOLANGCI_LINT_VERSION ?= v2.4.0
+
+TAPES:=$(wildcard doc/vhs/*tape)
 gifs: $(TAPES)
 	for i in $(TAPES); do vhs < $$i; done
 
 docker-lint:
-	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:latest golangci-lint run -v
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:$(GOLANGCI_LINT_VERSION) golangci-lint run -v
 
 lint:
 	golangci-lint run -v
