@@ -21,3 +21,10 @@ WhenToUse: ""
 # Analyzers: add/remove + settings templates
 
 Document workspace for 003-ANALYZERS.
+
+## Key links
+
+- **Implementation doc**: `analysis/01-implementation-analyzers-add-remove-settings-templates.md`
+- **Diary**: `reference/01-diary.md`
+- **Tasks**: `tasks.md`
+- **Changelog**: `changelog.md`
