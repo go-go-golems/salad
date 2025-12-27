@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	pb "github.com/go-go-golems/salad/gen/saleae/automation"
@@ -24,6 +26,7 @@ func main() {
 
 		bufferMB  = flag.Uint64("buffer-mb", 16, "Capture buffer size in megabytes")
 		digitalHz = flag.Uint64("digital-hz", 1_000_000, "Digital sample rate (Hz)")
+		digital   = flag.String("digital", "0,1,2,3", "Digital channels to enable (comma-separated, e.g. 0,1,2,3)")
 	)
 	flag.Parse()
 
@@ -69,7 +72,7 @@ func main() {
 			LogicDeviceConfiguration: &pb.LogicDeviceConfiguration{
 				EnabledChannels: &pb.LogicDeviceConfiguration_LogicChannels{
 					LogicChannels: &pb.LogicChannels{
-						DigitalChannels: []uint32{0},
+						DigitalChannels: nil,
 					},
 				},
 				DigitalSampleRate: uint32(*digitalHz),
@@ -84,6 +87,17 @@ func main() {
 			},
 		},
 	}
+
+	digitalChannels, err := parseUint32CSV(*digital)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "parse --digital: %v\n", err)
+		os.Exit(2)
+	}
+	if len(digitalChannels) == 0 {
+		_, _ = fmt.Fprintf(os.Stderr, "at least one digital channel must be specified via --digital\n")
+		os.Exit(2)
+	}
+	req.GetLogicDeviceConfiguration().GetLogicChannels().DigitalChannels = digitalChannels
 
 	reply, err := client.StartCapture(ctx, req)
 	if err != nil {
@@ -119,4 +133,25 @@ func dialAndWaitReady(ctx context.Context, addr string) (*grpc.ClientConn, error
 			return nil, errors.Wrapf(ctx.Err(), "connect to %s", addr)
 		}
 	}
+}
+
+func parseUint32CSV(s string) ([]uint32, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]uint32, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		v, err := strconv.ParseUint(part, 10, 32)
+		if err != nil {
+			return nil, errors.Wrapf(err, "parse uint32 %q", part)
+		}
+		out = append(out, uint32(v))
+	}
+	return out, nil
 }
