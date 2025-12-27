@@ -1,0 +1,571 @@
+---
+Title: 'Diary: Mock Saleae Server Implementation'
+Ticket: 010-MOCK-SERVER
+Status: active
+Topics:
+    - go
+    - saleae
+    - testing
+    - mock
+    - grpc
+    - implementation
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: "Step-by-step narrative of designing and implementing the mock Saleae server, documenting decisions, learnings, and challenges."
+LastUpdated: 2025-12-27T00:00:00Z
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Diary: Mock Saleae Server Implementation
+
+## Goal
+
+Document the design and implementation journey for a mock Saleae Logic 2 gRPC server that enables testing salad commands without requiring a real Logic 2 instance or physical hardware. This diary captures what we learned about gRPC server implementation, state management patterns, and test infrastructure design.
+
+## Step 1: Codebase Analysis and Design
+
+This step involved analyzing the existing client code to understand how it connects to gRPC servers, examining the generated server interface, and designing the mock server architecture. The goal was to create a comprehensive design document before starting implementation.
+
+**Commit (code):** N/A — Design phase
+
+### What I did
+
+- Analyzed `internal/saleae/client.go` to understand client connection patterns
+- Examined `gen/saleae/automation/saleae_grpc.pb.go` to understand the `ManagerServer` interface
+- Reviewed `proto/saleae/grpc/saleae.proto` to list all RPCs that need implementation
+- Searched codebase for existing test patterns (found none, so this is new infrastructure)
+- Created comprehensive design document covering:
+  - Mental model of what a mock server does
+  - Codebase structure analysis
+  - Server interface requirements
+  - State management design
+  - RPC implementation patterns
+  - Testing strategy
+
+### Why
+
+- Need to understand client connection mechanism to design server startup
+- Must understand all RPCs to prioritize implementation
+- State management is critical—mock must track captures, devices, analyzers correctly
+- Test infrastructure needs to be simple to use but realistic enough to catch bugs
+
+### What worked
+
+- Generated gRPC code provides `UnimplementedManagerServer` that we can embed
+- Client uses standard `grpc.DialContext`—any server on any port works
+- Proto definition clearly lists all 14 RPCs we need to implement
+- Existing client code shows exactly what the mock needs to support
+
+### What didn't work
+
+- No existing test infrastructure in codebase—need to build from scratch
+- No examples of gRPC server implementation in this codebase
+- Need to research gRPC server patterns (standard Go patterns, but not documented here)
+
+### What I learned
+
+**gRPC Server Pattern:**
+- Create `grpc.NewServer()`
+- Implement the server interface (embed `UnimplementedManagerServer`)
+- Register with `RegisterManagerServer(grpcServer, implementation)`
+- Listen on port with `net.Listen("tcp", addr)`
+- Serve with `grpcServer.Serve(lis)`
+- Stop with `grpcServer.Stop()`
+
+**State Management:**
+- Mock server needs to track: devices, captures (by ID), analyzers (by capture+analyzer ID)
+- Use mutex (`sync.RWMutex`) for thread-safe access
+- Generate IDs with atomic counter or mutex-protected counter
+- State must persist across RPC calls (store in Server struct, not function locals)
+
+**Client Connection:**
+- Client uses `grpc.DialContext` with address string (e.g., "127.0.0.1:10430")
+- Mock server can listen on any port (use random port in tests to avoid conflicts)
+- Client doesn't know it's talking to a mock—just a gRPC connection
+
+**RPC Implementation:**
+- All RPCs take `context.Context` and request proto, return reply proto and error
+- Use `status.Error(codes.XXX, "message")` for gRPC errors, not Go errors
+- Embed `UnimplementedManagerServer` by value (not pointer) for forward compatibility
+- Only implement RPCs we need—unimplemented ones return "not implemented" error
+
+**Testing Patterns:**
+- Create helper function `StartMockServer(t)` that returns server, client, cleanup
+- Use random port (`:0`) to avoid conflicts
+- Return cleanup function for `defer cleanup()` pattern
+- Test both the mock server itself (unit tests) and client code using mock (integration tests)
+
+### What was tricky to build
+
+**State Management Design:**
+- Deciding what state to track (captures, devices, analyzers)
+- How to structure state (maps vs slices, key formats)
+- Thread safety (mutex placement, read vs write locks)
+- ID generation (atomic vs mutex, starting from 1 vs 0)
+
+**WaitCapture Behavior:**
+- Real `WaitCapture` blocks until capture completes
+- Mock can't block tests indefinitely
+- Options: return immediately (assume completion), sleep (slow tests), use channels (complex)
+- Decided: return success if elapsed >= duration, error otherwise (document limitation)
+
+**Export RPCs:**
+- Real exports write files to disk
+- Mock options: actually write files (test can verify), track calls (test verifies RPC), do nothing (simplest)
+- Decided: start with simplest (just verify capture exists), add file I/O if tests need it
+
+**Error Handling:**
+- Need to match Logic 2's error behavior (device not found, capture not found, etc.)
+- Use correct gRPC status codes (`codes.NotFound`, `codes.InvalidArgument`)
+- Tests check status codes, not error strings
+
+### What warrants a second pair of eyes
+
+**State Management:**
+- Verify mutex usage is correct (RWMutex for reads, Mutex for writes)
+- Check ID generation is thread-safe
+- Ensure state persists correctly across RPC calls
+
+**RPC Implementations:**
+- Verify error cases match Logic 2 behavior
+- Check status codes are correct
+- Ensure validation logic matches proto comments
+
+**Test Helper:**
+- Verify cleanup function stops server correctly
+- Check random port selection avoids conflicts
+- Ensure client connection works reliably
+
+**WaitCapture Implementation:**
+- Review decision to return immediately vs block
+- Consider if tests need blocking behavior
+- Document limitation clearly
+
+### What should be done in the future
+
+**File I/O for Exports:**
+- If tests need to verify export files, implement actual file writing
+- Create temporary directories for test files
+- Clean up files in test cleanup
+
+**Capture Timing:**
+- If tests need realistic timing, implement time-based state transitions
+- Use goroutines to simulate capture completion after duration
+- Add context cancellation support
+
+**Error Injection:**
+- Add ability to inject errors for testing error handling
+- Allow tests to configure mock to return specific errors
+- Support testing retry logic, timeouts, etc.
+
+**State Inspection:**
+- Add methods to inspect mock server state (for test assertions)
+- Allow tests to query captures, devices, analyzers
+- Support state reset for test isolation
+
+**Performance Testing:**
+- If needed, add benchmarks using mock server
+- Test concurrent RPC handling
+- Verify mutex contention doesn't slow tests
+
+### Code review instructions
+
+**Start here:**
+- `analysis/01-mock-server-design.md` — complete design document
+
+**Key files to review:**
+- `gen/saleae/automation/saleae_grpc.pb.go:260-294` — ManagerServer interface
+- `gen/saleae/automation/saleae_grpc.pb.go:302-352` — UnimplementedManagerServer
+- `gen/saleae/automation/saleae_grpc.pb.go:362` — RegisterManagerServer function
+- `internal/saleae/client.go:18-38` — Client connection code
+- `proto/saleae/grpc/saleae.proto:29-81` — All RPC definitions
+
+**How to validate:**
+- Read design document sections on state management and RPC patterns
+- Compare server struct design with gRPC best practices
+- Review test helper pattern against Go testing conventions
+- Check that all 14 RPCs are accounted for in implementation plan
+
+### Technical details
+
+**Server Interface:**
+```go
+type ManagerServer interface {
+    GetAppInfo(context.Context, *GetAppInfoRequest) (*GetAppInfoReply, error)
+    GetDevices(context.Context, *GetDevicesRequest) (*GetDevicesReply, error)
+    StartCapture(context.Context, *StartCaptureRequest) (*StartCaptureReply, error)
+    // ... 11 more RPCs
+    mustEmbedUnimplementedManagerServer()
+}
+```
+
+**Server Struct:**
+```go
+type Server struct {
+    pb.UnimplementedManagerServer  // Embed by value
+    
+    mu sync.RWMutex
+    
+    devices   []*pb.Device
+    captures  map[uint64]*CaptureState
+    analyzers map[string]*AnalyzerState
+    
+    nextCaptureID  uint64
+    nextAnalyzerID uint64
+}
+```
+
+**Test Helper Pattern:**
+```go
+func StartMockServer(t *testing.T) (*Server, *saleae.Client, func()) {
+    s := NewServer()
+    lis, _ := net.Listen("tcp", ":0")  // Random port
+    grpcServer := grpc.NewServer()
+    pb.RegisterManagerServer(grpcServer, s)
+    go grpcServer.Serve(lis)
+    
+    client, _ := saleae.New(ctx, saleae.Config{
+        Host: "127.0.0.1",
+        Port: extractPort(lis.Addr().String()),
+    })
+    
+    return s, client, func() {
+        grpcServer.Stop()
+        lis.Close()
+        client.Close()
+    }
+}
+```
+
+**RPC Implementation Pattern:**
+```go
+func (s *Server) StartCapture(ctx context.Context, req *pb.StartCaptureRequest) (*pb.StartCaptureReply, error) {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    
+    // Validate
+    // Create state
+    // Return reply
+}
+```
+
+### What I'd do differently next time
+
+- Research gRPC server patterns earlier (standard Go patterns, but good to confirm)
+- Look at other Go projects with mock gRPC servers for inspiration
+- Consider using a testing library that provides gRPC server helpers (if one exists)
+- Document WaitCapture blocking behavior decision earlier (it's a key design choice)
+
+---
+
+## Step 2: CLI Verbs Analysis and Task Creation
+
+This step involved analyzing all existing CLI commands to understand which gRPC methods they call, how they use those methods, and what the mock server needs to implement to support testing. The goal was to create a comprehensive mapping document and detailed implementation tasks.
+
+**Commit (code):** N/A — Analysis phase
+
+### What I did
+
+- Read all CLI command files (`appinfo.go`, `devices.go`, `capture.go`, `export.go`)
+- Traced each command to its client wrapper method in `internal/saleae/client.go`
+- Identified which gRPC RPC each command calls
+- Analyzed request/response structures and command behavior
+- Documented mock server requirements for each RPC
+- Created comprehensive task list organized by implementation phase
+- Related CLI command files to the analysis document
+
+### Why
+
+- Need to understand what the mock server must support before implementing
+- Want to prioritize implementation based on what CLI commands are already implemented
+- Need clear tasks to guide implementation work
+- Want to ensure no CLI command is missed in mock server implementation
+
+### What worked
+
+- CLI commands are well-structured and easy to trace
+- Client wrapper methods clearly map to gRPC calls
+- Proto definitions provide clear request/response structures
+- Existing commands cover 8 RPCs (out of 14 total in the API)
+- Clear separation between discovery, capture lifecycle, and export commands
+
+### What didn't work
+
+- Some commands have complex flag parsing (e.g., `export` commands parse CSV channel lists)
+- Export commands have optional file I/O that needs design decision
+- `WaitCapture` has mode-specific behavior that needs careful implementation
+
+### What I learned
+
+**CLI Command Structure:**
+- Commands follow consistent pattern: create client → call RPC → print output
+- Commands use Cobra framework with flags for parameters
+- Output format is simple (key=value pairs or "ok")
+- Error handling propagates from client wrapper
+
+**RPC Usage Patterns:**
+- Discovery commands (`appinfo`, `devices`) are simple, no state
+- Capture commands (`load`, `save`, `stop`, `wait`, `close`) require state tracking
+- Export commands (`raw-csv`, `raw-binary`) require capture validation and optional file I/O
+
+**Implementation Priority:**
+- Phase 1: Discovery (2 RPCs) — simplest, no state
+- Phase 2: Capture lifecycle (5 RPCs) — medium complexity, requires state
+- Phase 3: Export (2 RPCs) — complex, requires state + optional file I/O
+- Phase 4: Future RPCs (5 RPCs) — not yet needed, can be stubbed
+
+**Mock Server Requirements:**
+- Must track: devices (list), captures (map by ID), analyzers (map by key)
+- Must generate IDs: capture IDs start at 1, analyzer IDs start at 1
+- Must validate: capture IDs exist, devices exist, channels valid
+- Must handle errors: use gRPC status codes (`codes.InvalidArgument`, `codes.NotFound`)
+
+### What was tricky to build
+
+**Task Organization:**
+- Deciding how to break down tasks (by RPC? by phase? by feature?)
+- Balancing detail (too much = overwhelming) vs clarity (too little = unclear)
+- Deciding what belongs in "basic infrastructure" vs "RPC implementation"
+
+**Export RPC Complexity:**
+- Export RPCs have many parameters (capture ID, directory, channels, downsample ratio, timestamp format)
+- Need to decide: validate all parameters or just capture ID?
+- File I/O decision: write files (testable) vs just return success (simpler)
+
+**WaitCapture Behavior:**
+- Real `WaitCapture` blocks until capture completes
+- Mock can't block tests indefinitely
+- Need to document limitation clearly
+- Mode-specific logic (manual vs timed vs trigger) adds complexity
+
+**State Management:**
+- Need to track capture status (running, stopped, completed)
+- Need to track capture mode for `WaitCapture` logic
+- Need to track start time for timed captures
+- Need thread-safe access (mutex protection)
+
+### What warrants a second pair of eyes
+
+**Task List:**
+- Verify all CLI commands are covered
+- Check task breakdown is appropriate (not too granular, not too coarse)
+- Ensure tasks are actionable and testable
+- Verify priority order makes sense
+
+**Analysis Document:**
+- Check that all RPC requirements are documented correctly
+- Verify complexity ratings are accurate
+- Ensure error handling requirements are complete
+- Confirm state management requirements are sufficient
+
+**Implementation Plan:**
+- Review phase ordering (discovery → capture → export)
+- Check that basic infrastructure tasks come first
+- Verify test tasks are included for each RPC
+- Ensure future RPCs are documented but not blocking
+
+### What should be done in the future
+
+**Test Coverage:**
+- Add integration tests for each CLI command using mock server
+- Test error cases (invalid IDs, missing resources)
+- Test concurrent access (multiple goroutines)
+- Test state persistence across RPC calls
+
+**File I/O for Exports:**
+- If tests need to verify export files, implement actual file writing
+- Create temporary directories for test files
+- Clean up files in test cleanup
+- Document file format expectations
+
+**State Inspection API:**
+- Add methods to inspect mock server state (`GetCapture`, `GetDevices`)
+- Add methods to configure state (`AddDevice`, `SetAppInfo`)
+- Add methods to reset state (for test isolation)
+- Document state inspection API for test writers
+
+**Error Injection:**
+- Add ability to inject errors for testing error handling
+- Allow tests to configure mock to return specific errors
+- Support testing retry logic, timeouts, etc.
+- Document error injection API
+
+### Code review instructions
+
+**Start here:**
+- `analysis/02-cli-verbs-to-grpc-methods-mapping.md` — complete CLI-to-RPC mapping
+- `tasks.md` — detailed implementation tasks
+
+**Key files to review:**
+- `cmd/salad/cmd/appinfo.go` — simplest command, calls `GetAppInfo`
+- `cmd/salad/cmd/devices.go` — simple command, calls `GetDevices`
+- `cmd/salad/cmd/capture.go` — capture lifecycle commands (5 RPCs)
+- `cmd/salad/cmd/export.go` — export commands (2 RPCs)
+- `internal/saleae/client.go` — client wrapper methods
+
+**How to validate:**
+- Read analysis document to understand each command's requirements
+- Check that all 8 implemented CLI commands are covered
+- Verify task list covers all required RPCs
+- Ensure tasks are organized by priority (discovery → capture → export)
+
+### Technical details
+
+**CLI Commands Analyzed:**
+1. `salad appinfo` → `GetAppInfo` (discovery, simple)
+2. `salad devices` → `GetDevices` (discovery, simple)
+3. `salad capture load` → `LoadCapture` (capture lifecycle, medium)
+4. `salad capture save` → `SaveCapture` (capture lifecycle, medium)
+5. `salad capture stop` → `StopCapture` (capture lifecycle, medium)
+6. `salad capture wait` → `WaitCapture` (capture lifecycle, complex)
+7. `salad capture close` → `CloseCapture` (capture lifecycle, medium)
+8. `salad export raw-csv` → `ExportRawDataCsv` (export, complex)
+9. `salad export raw-binary` → `ExportRawDataBinary` (export, complex)
+
+**RPCs Required for Current CLI:**
+- Phase 1: `GetAppInfo`, `GetDevices` (2 RPCs)
+- Phase 2: `LoadCapture`, `SaveCapture`, `StopCapture`, `WaitCapture`, `CloseCapture` (5 RPCs)
+- Phase 3: `ExportRawDataCsv`, `ExportRawDataBinary` (2 RPCs)
+- **Total: 9 RPCs** (out of 14 total in API)
+
+**Future RPCs (Not Yet Required):**
+- `StartCapture` (for ticket 002)
+- `AddAnalyzer`, `RemoveAnalyzer` (for ticket 003)
+- `AddHighLevelAnalyzer`, `RemoveHighLevelAnalyzer` (for ticket 004)
+- `ExportDataTableCsv` (for ticket 005)
+- `LegacyExportAnalyzer` (low priority)
+
+**Task Breakdown:**
+- Phase 1: Basic Infrastructure (6 tasks)
+- Phase 2: Discovery RPCs (2 RPCs, ~10 tasks)
+- Phase 3: Capture Lifecycle RPCs (5 RPCs, ~25 tasks)
+- Phase 4: Export RPCs (2 RPCs, ~10 tasks)
+- Phase 5: Testing Infrastructure (~5 tasks)
+- Phase 6: Future RPCs (5 RPCs, ~20 tasks)
+- **Total: ~76 tasks** (many are subtasks)
+
+### What I'd do differently next time
+
+- Start with CLI command analysis before design document (understand requirements first)
+- Create task list earlier in the process (helps prioritize implementation)
+- Document complexity ratings for each RPC (helps estimate effort)
+- Include test requirements in task list from the start
+
+---
+
+## Step 3: Simplify Tasks + Design YAML DSL for Configurable Mock Behavior
+
+This step was about taking a breath and de-overengineering the “task plan” while simultaneously raising the actual leverage of the mock server: we want to change mock behavior without touching Go code, so tests can cover lots of real-world situations by swapping YAML scenario files. The outcome is a much smaller task list (capability milestones) and a thorough DSL design that focuses on fixtures, policy knobs, and deterministic fault injection.
+
+**Commit (code):** N/A — Documentation and planning phase
+
+### What I did
+
+- Rewrote `tasks.md` to be a short capability checklist instead of a 70+ subtask breakdown
+- Designed a YAML DSL for configuring mock server behavior (fixtures + per-RPC knobs + fault injection)
+- Wrote a scenario library with multiple distinct configurations (happy path, filtering, transient errors, wait behavior, export side effects)
+- Related the DSL design to current CLI verbs so it’s grounded in real coverage needs
+
+### Why
+
+- A long, deeply nested task list makes it harder to start; it looks “complete” but is hard to execute incrementally.
+- A YAML-configurable mock server is the highest ROI lever: we can write many tests by adding YAML files rather than adding Go branches everywhere.
+- We want deterministic reproduction: scenario YAML should lock down IDs, errors, and side effects.
+
+### What worked
+
+- The mock requirements naturally collapse into a small set of orthogonal concepts:
+  - fixtures (appinfo/devices/captures)
+  - behavior policies (timing model, close semantics, export side effects)
+  - faults (error injection rules)
+- A “first match wins” ordered `faults` list is simple and expressive enough for most test needs.
+- Modeling `WaitCapture` via a policy knob (immediate vs error_if_running vs tiny block) avoids flaky tests.
+
+### What didn't work
+
+- The original tasks were too detailed and repetitive (every RPC repeated “validate X / write unit test / write integration test”).
+- Full request matching for complex nested fields (channels, etc.) quickly becomes a rabbit hole; we intentionally scoped matching to a small subset.
+
+### What I learned
+
+**DSL shape that stays sane:**
+- Keep it scenario-based: one YAML file = one coherent “world”.
+- Separate:
+  - `fixtures` (initial state)
+  - `behavior` (policies + side effects)
+  - `faults` (error injection)
+- Make deterministic defaults explicit (`capture_id_start`, `deterministic: true`).
+
+**Fault injection needs to be deterministic:**
+- `nth_call` is a huge win for simulating transient failures without randomness.
+- Request matching should start small (capture_id, filepath) and only grow when tests force it.
+
+### What was tricky to build
+
+- Designing `WaitCapture` semantics: tests must not hang, but we still need “running vs completed” coverage.
+- Avoiding a DSL that mirrors the entire proto schema (too big), while still being expressive enough for CLI integration tests.
+- Deciding how much filesystem side effect to simulate for exports/save (no-op vs placeholder files).
+
+### What warrants a second pair of eyes
+
+- DSL ergonomics: are the keys intuitive, or are we encoding too much “implementation detail” into YAML?
+- Fault precedence rules (ordered list): confirm this is easy to reason about in tests.
+- `WaitCapture` policy defaults: choose a default that won’t surprise test authors.
+
+### What should be done in the future
+
+- Add a small “golden scenarios” directory and ensure tests actually run against those YAML files (so docs don’t drift).
+- Decide whether unknown capture IDs should default to `INVALID_ARGUMENT` or `NOT_FOUND`, and document it as a contract.
+- If/when analyzer/HLA verbs land, extend the DSL with `fixtures.analyzers` + analyzer ID generation and minimal behavior knobs.
+
+### Code review instructions
+
+- Start with `analysis/03-mock-server-yaml-dsl-configurable-behavior-scenarios.md`
+- Then check `tasks.md` for the simplified capability milestones
+- Skim this diary step for the reasoning behind scoping decisions
+
+---
+
+## Step 4: General Method — Mapping YAML DSL to Go Runtime Behavior
+
+This step focused on documenting a reusable engineering approach for turning our YAML scenario DSL into clean Go code: decode into config structs, compile into an immutable runtime plan, and implement RPC handlers as a consistent pipeline (faults → validate → state transitions → side effects → reply). The goal is to keep the mock server easy to extend (new RPCs, new knobs) without accumulating scattered YAML interpretation logic across handlers.
+
+**Commit (code):** N/A — Documentation phase
+
+### What I did
+
+- Wrote a dedicated document describing the YAML→Go mapping method, including recommended struct shapes, defaults layering, compilation/normalization, and pseudocode for the core executor pipeline
+- Documented strategies for fault injection, request matching (start small), deterministic time, and pluggable filesystem side effects
+
+### Why
+
+- Without a clear mapping method, DSL-driven systems tend to devolve into ad-hoc per-handler YAML lookups and duplicated validation logic.
+- A “compile step” (config → plan) makes runtime code simpler, faster, and safer (validated/normalized once).
+- A consistent handler pipeline makes correctness review much easier: every RPC follows the same shape.
+
+### What worked
+
+- The separation of `Config` (YAML-facing) vs `Plan` (compiled runtime) naturally enforces clean boundaries.
+- First-match-wins fault rules + per-method call counters yield deterministic transient failure simulation without randomness.
+- Introducing a `Clock` interface gives us deterministic timing semantics without sleeping tests by default.
+
+### What was tricky to build
+
+- Picking a request-matching strategy that is powerful enough for tests but doesn’t become “generic protobuf query language”.
+- Defining `WaitCapture` policies that avoid hangs/flakes but still allow “running vs completed” behavior coverage.
+- Designing side effects so we can test filesystem outputs when needed, without baking IO into core handler logic.
+
+### What warrants a second pair of eyes
+
+- Ensure the proposed `exec` pipeline doesn’t hide important method-specific semantics (i.e., avoid too much indirection).
+- Confirm the defaults layering rule is intuitive and won’t lead to surprising overrides.
+- Review whether “unknown fields rejected” during YAML decode is acceptable (it’s great for catching typos, but can be annoying during iteration).
+
+### Code review instructions
+
+- Start with `analysis/04-mapping-yaml-dsl-to-go-structures-validation-and-behavior-composition.md`
+- Cross-check against `analysis/03-mock-server-yaml-dsl-configurable-behavior-scenarios.md` to ensure the DSL keys map cleanly into the proposed Go structs
