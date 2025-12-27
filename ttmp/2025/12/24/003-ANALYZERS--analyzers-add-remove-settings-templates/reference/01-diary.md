@@ -205,3 +205,61 @@ This step adds the CLI surface for analyzers. The commands follow the establishe
 - Validate with:
   - `go test ./... -count=1`
 
+---
+
+## Step 5: Smoke test analyzer add/remove against a real Logic 2 server
+
+This step validates that the analyzer verbs work end-to-end against a **real** Saleae Logic 2 Automation gRPC server (not the mock). The main unknown was analyzer settings: since the API doesn’t expose schemas, we expected some trial-and-error to discover which setting keys are required for a successful `AddAnalyzer`.
+
+**Commit (code):** N/A — manual test run (no code changes required for the final successful run)
+
+### What I did
+- Verified connectivity to the real server:
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 2s appinfo`
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 2s devices`
+- Created a manual capture to obtain a `capture_id` using the helper script:
+  - `go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/01-real-start-capture.go --host 127.0.0.1 --port 10430 --timeout 5s`
+  - Output: `capture_id=2`
+- Attempted `AddAnalyzer` with empty settings (expected to fail):
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 5s analyzer add --capture-id 2 --name "SPI" --label "smoke"`
+  - Observed error: `Analyzer settings errors: "Invalid channel(s)"`
+- Retried with explicit channel settings (guessed UI keys) and succeeded:
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 5s analyzer add --capture-id 2 --name "SPI" --label "smoke" --set-int "Clock=0" --set-int "MOSI=1" --set-int "MISO=2" --set-int "Enable=3"`
+  - Output: `analyzer_id=10009`
+- Removed the analyzer:
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 5s analyzer remove --capture-id 2 --analyzer-id 10009`
+  - Output: `ok`
+- Cleaned up the capture:
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 5s capture stop --capture-id 2`
+  - `go run ./cmd/salad --host 127.0.0.1 --port 10430 --timeout 5s capture close --capture-id 2`
+
+### Why
+- This is the “reality check” for the verbs: our CLI must work with real Logic 2 behavior, especially around settings validation and error codes.
+
+### What worked
+- Real server reachable locally: `application_version=2.4.40` and a physical device was present.
+- `AddAnalyzer` succeeded once the required channel settings were provided.
+- `RemoveAnalyzer` succeeded and returned `ok`.
+
+### What didn't work
+- `AddAnalyzer` with an empty settings map failed with:
+  - `rpc error: code = Aborted desc = 10: Analyzer settings errors: "Invalid channel(s)"`
+
+### What I learned
+- For `"SPI"`, the real server accepted setting keys that match the UI labels:
+  - `Clock`, `MOSI`, `MISO`, `Enable` (all `int64` channel indices via `--set-int`).
+- The error message does not list which keys are missing; it only reports a summary (“Invalid channel(s)”), so having templates (or at least known-good examples) is important.
+
+### What was tricky to build
+- Determining the “correct” settings keys without schema introspection; success depended on using UI-visible names exactly.
+
+### What warrants a second pair of eyes
+- Whether we should ship a small set of known-good analyzer templates (e.g. SPI/I2C/Async Serial) as a first-class feature, or keep them as `ttmp` scripts until stabilized.
+
+### What should be done in the future
+- Add a `configs/analyzers/spi.yaml` template (or equivalent) based on the proven keys from this smoke test.
+- Consider improving error UX: when AddAnalyzer fails with “Invalid channel(s)”, hint that channel-selection settings must match UI names exactly.
+
+### Code review instructions
+- No code changes in this step; validate by re-running the commands above against a real server.
+
