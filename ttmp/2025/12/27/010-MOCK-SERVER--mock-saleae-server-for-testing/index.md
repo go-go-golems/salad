@@ -22,6 +22,8 @@ RelatedFiles:
       Note: YAML DSL design for configuring mock behavior
     - Path: ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/analysis/04-mapping-yaml-dsl-to-go-structures-validation-and-behavior-composition.md
       Note: General method for YAML→Go mapping (config→plan→pipeline)
+    - Path: ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/analysis/05-bug-report-faults-yaml-does-not-inject-savecapture-unavailable-capture-10-not-found.md
+      Note: Bug report and investigation plan for faults scenario
     - Path: ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/tasks.md
       Note: Simplified capability-based tasks
 ExternalSources: []
@@ -30,6 +32,7 @@ LastUpdated: 2025-12-27T12:44:13.018312633-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

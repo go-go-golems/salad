@@ -71,3 +71,36 @@ Step 7: guard against OK status on unknown captures
 - /workspace/salad/internal/mock/saleae/plan.go — Compile-time validation for status_on_unknown_capture_id
 - /workspace/salad/internal/mock/saleae/server.go — Runtime guard against nil capture
 
+
+## 2025-12-27
+
+Bug report: faults.yaml does not inject UNAVAILABLE for SaveCapture; observed InvalidArgument capture 10 not found. Added investigation notes, code pointers, and suggested logging.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/analysis/05-bug-report-faults-yaml-does-not-inject-savecapture-unavailable-capture-10-not-found.md — Bug report
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/reference/01-diary.md — Diary Step 8
+
+
+## 2025-12-27
+
+Added tmux lifecycle scripts for salad-mock (start/stop/restart/tail) with persistent ticket-local logs, plus kill-by-port helper to avoid port-collision confusion during scenario testing. Updated faults smoke script to default to port 10432 and always dump mock.log.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/03-smoke-faults.sh — Faults smoke improvements
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/09-kill-mock-on-port.sh — Kill stuck listener by port
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/10-tmux-mock-start.sh — Start in tmux + log to file
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/README.md — Script usage guide
+
+
+## 2025-12-27
+
+Re-ran go checks + happy-path + faults smoke after port cleanup: faults injection works as expected (UNAVAILABLE on first SaveCapture, ok on second). Added playbook: Debugging the mock server (ports, tmux, logs, smoke scripts).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/analysis/05-bug-report-faults-yaml-does-not-inject-savecapture-unavailable-capture-10-not-found.md — Port collision mitigation + updated understanding
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/playbook/01-debugging-the-mock-server.md — Reusable debugging procedure
+- /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/README.md — Script entry point
+

@@ -771,3 +771,92 @@ This step addresses a safety hole in `captureFor`: if the status-on-unknown-capt
 
 ### What I'd do differently next time
 - Add a small test that asserts compile-time rejection and avoids relying on runtime fallbacks.
+
+---
+
+## Step 8: Repro scripts + fault scenario mismatch (SaveCapture fault not firing)
+
+This step focused on making the “run it again” loop fast by adding repeatable smoke scripts under the ticket `scripts/` folder and then using them to validate behavior against the YAML scenarios. The happy-path script passed and produced the expected placeholder files. The faults scenario, however, did not behave as described in `configs/mock/faults.yaml`: instead of returning `UNAVAILABLE` on the first `SaveCapture`, the server returned `InvalidArgument: capture 10 not found`, which suggests the wrong scenario may be loaded or fixtures/fault rules aren’t applied.
+
+**Commit (code):** N/A — smoke scripts + investigation notes
+
+### What I did
+
+- Added scripts under `ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/`:
+  - `01-go-check.sh`: gofmt (scoped) + `GOWORK=off go test ./...` + `GOWORK=off go vet ./...`
+  - `02-smoke-happy-path.sh`: starts `salad-mock` with `configs/mock/happy-path.yaml` and runs CLI verbs end-to-end
+  - `03-smoke-faults.sh`: starts `salad-mock` with `configs/mock/faults.yaml` and attempts to validate `faults: nth_call` behavior
+- Ran `02-smoke-happy-path.sh` successfully and confirmed placeholder outputs are created and contain expected marker lines.
+- Ran `03-smoke-faults.sh` and observed `SaveCapture RPC: code = InvalidArgument desc = capture 10 not found` (both calls), not the expected `UNAVAILABLE` injection.
+- Wrote a bug report doc describing likely causes and where to add logging.
+
+### Why
+
+- A repeatable script is the fastest way to validate a fix and prevent regressions.
+- The faults scenario is the tightest end-to-end test for the exec pipeline: it exercises call counters + fault matching before handler logic.
+
+### What worked
+
+- Happy path scenario config matches runtime behavior precisely (fixtures + behavior + placeholder side effects).
+- Running checks with `GOWORK=off` reliably targets the `salad` module even though repo root `go.work` doesn’t include it.
+
+### What didn't work
+
+- Fault injection did not appear to fire for `SaveCapture` under the faults scenario.
+- The current faults smoke script exits before printing `mock.log` if the second call fails, which hides crucial diagnostics (e.g., which scenario loaded, how many faults were compiled).
+
+### What I learned
+
+- Given the architecture, a handler-level error (“capture not found”) suggests `maybeFault` did not match or did not run (or there were no compiled faults).
+- The highest-likelihood explanation is “wrong config loaded” or “faults not present in plan”, which can be verified quickly by adding startup logs: config path + scenario + counts for fixtures/faults.
+
+### Code review instructions
+
+- Start with bug report doc:
+  - `analysis/05-bug-report-faults-yaml-does-not-inject-savecapture-unavailable-capture-10-not-found.md`
+- Then inspect:
+  - `internal/mock/saleae/config.go:LoadConfig`
+  - `internal/mock/saleae/plan.go:Compile, compileFixtures, compileFaults, parseMethod`
+  - `internal/mock/saleae/exec.go:exec, maybeFault, newState`
+
+---
+
+## Step 9: Run mock server in tmux + persist logs to ticket workspace
+
+This step made the mock server easier to start/stop/restart without leaving stray processes around, and it made debugging much easier by persisting server output to log files under the ticket workspace. This directly addresses a major source of confusion during faults testing: if port 10431 is already held by an older `salad-mock`, starting a new server can fail to bind and the CLI will still talk to the old server, which looks like “wrong YAML loaded”.
+
+**Commit (code):** N/A — workflow scripts + logs directory
+
+### What I did
+
+- Added tmux lifecycle scripts under `ttmp/.../010-MOCK-SERVER.../scripts/`:
+  - `10-tmux-mock-start.sh`: starts `salad-mock` in a tmux session and appends output to `scripts/logs/salad-mock-<port>.log`
+  - `11-tmux-mock-stop.sh`: stops the tmux session
+  - `12-tmux-mock-restart.sh`: restart helper
+  - `13-tmux-mock-tail-log.sh`: `tail -f` convenience
+- Added `scripts/logs/` with `.gitignore` (logs not committed) + `.gitkeep` (directory tracked).
+- Added `09-kill-mock-on-port.sh` to kill any listener on a port by parsing `ss -ltnp` (with a `pkill` fallback).
+- Hardened the tmux start script to fail fast if the target port is already in use.
+
+### Why
+
+- Port collisions are easy to create when smoke scripts start servers in the background and fail early.
+- tmux makes “kill/restart” muscle memory simple and provides a stable place to view logs.
+- Persisted log files make triage actionable: we can see binds, scenario selection, and runtime output after the fact.
+
+### What worked
+
+- We confirmed tmux is available (`tmux 3.4`).
+- The kill-by-port script successfully found and killed an existing `salad-mock` listener on 10431.
+- Starting the server in tmux and connecting via `salad appinfo` worked.
+
+### What didn't work
+
+- The log file showed an earlier `bind: address already in use` attempt. That was useful because it proves the port-collision hypothesis is real and explains the “wrong server answered” symptom.
+
+### Code review instructions
+
+- Start in `ttmp/.../010-MOCK-SERVER.../scripts/README.md`
+- Then inspect the scripts:
+  - `scripts/10-tmux-mock-start.sh`
+  - `scripts/09-kill-mock-on-port.sh`
