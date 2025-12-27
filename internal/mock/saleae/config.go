@@ -76,6 +76,7 @@ type CaptureModeConfig struct {
 
 type BehaviorConfig struct {
 	GetDevices          GetDevicesBehaviorConfig          `yaml:"GetDevices,omitempty"`
+	StartCapture        StartCaptureBehaviorConfig        `yaml:"StartCapture,omitempty"`
 	LoadCapture         LoadCaptureBehaviorConfig         `yaml:"LoadCapture,omitempty"`
 	SaveCapture         SaveCaptureBehaviorConfig         `yaml:"SaveCapture,omitempty"`
 	StopCapture         StopCaptureBehaviorConfig         `yaml:"StopCapture,omitempty"`
@@ -87,6 +88,19 @@ type BehaviorConfig struct {
 
 type GetDevicesBehaviorConfig struct {
 	FilterSimulationDevices *bool `yaml:"filter_simulation_devices,omitempty"`
+}
+
+type StartCaptureBehaviorConfig struct {
+	Validate StartCaptureValidateConfig `yaml:"validate,omitempty"`
+	OnCall   StartCaptureOnCallConfig   `yaml:"on_call,omitempty"`
+}
+
+type StartCaptureValidateConfig struct {
+	RequireDeviceExists *bool `yaml:"require_device_exists,omitempty"`
+}
+
+type StartCaptureOnCallConfig struct {
+	CreateCapture *CaptureCreateConfig `yaml:"create_capture,omitempty"`
 }
 
 type LoadCaptureBehaviorConfig struct {

@@ -12,6 +12,7 @@ type Method string
 const (
 	MethodGetAppInfo          Method = "GetAppInfo"
 	MethodGetDevices          Method = "GetDevices"
+	MethodStartCapture        Method = "StartCapture"
 	MethodLoadCapture         Method = "LoadCapture"
 	MethodSaveCapture         Method = "SaveCapture"
 	MethodStopCapture         Method = "StopCapture"
@@ -24,6 +25,7 @@ const (
 var AllMethods = []Method{
 	MethodGetAppInfo,
 	MethodGetDevices,
+	MethodStartCapture,
 	MethodLoadCapture,
 	MethodSaveCapture,
 	MethodStopCapture,

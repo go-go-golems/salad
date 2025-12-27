@@ -1,0 +1,49 @@
+version: 1
+scenario: start-capture-testing
+
+defaults:
+  ids:
+    deterministic: true
+    capture_id_start: 1
+  timing:
+    wait_capture_policy: block_until_done
+    max_block_ms: 5000
+
+fixtures:
+  appinfo:
+    application_version: "2.3.56-mock"
+    api_version:
+      major: 1
+      minor: 0
+      patch: 0
+    launch_pid: 4242
+  devices:
+    - device_id: "DEV1"
+      device_type: DEVICE_TYPE_LOGIC_PRO_8
+      is_simulation: false
+    - device_id: "DEV2"
+      device_type: DEVICE_TYPE_LOGIC_8
+      is_simulation: false
+
+behavior:
+  StartCapture:
+    validate:
+      require_device_exists: true
+    on_call:
+      create_capture:
+        status: running
+        mode:
+          kind: manual
+  WaitCapture:
+    validate:
+      require_capture_exists: true
+      error_on_manual_mode: true
+    completion:
+      timed_captures_complete_after_duration: true
+  StopCapture:
+    validate:
+      require_capture_exists: true
+    transition:
+      from: running
+      to: stopped
+

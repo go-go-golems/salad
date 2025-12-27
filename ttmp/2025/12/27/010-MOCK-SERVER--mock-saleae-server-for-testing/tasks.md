@@ -28,6 +28,18 @@ The goal here is **small number of tasks**, each representing a meaningful capab
   - `GetAppInfo`, `GetDevices`
   - `LoadCapture`, `SaveCapture`, `StopCapture`, `WaitCapture`, `CloseCapture`
   - `ExportRawDataCsv`, `ExportRawDataBinary`
+- [x] Implement `StartCapture` RPC for 002-CAPTURE-START testing:
+  - [x] Add `MethodStartCapture` constant to `exec.go`
+  - [x] Add `StartCaptureBehaviorConfig` to YAML config schema (`config.go`)
+  - [x] Add `StartCapturePlan` to compiled plan structure (`plan.go`)
+  - [x] Implement `StartCapture` handler in `server.go`:
+    - [x] Device validation (empty device_id → first physical device, error if none)
+    - [x] Device existence check (error if device_id not found)
+    - [x] Capture state creation with mode from `CaptureConfiguration` (manual/timed/trigger)
+    - [x] Capture ID generation (use `NextCaptureID`)
+    - [x] Return `StartCaptureReply` with `CaptureInfo`
+  - [x] Add YAML config examples for StartCapture scenarios (`configs/mock/start-capture.yaml`, updated `happy-path.yaml`)
+  - [ ] Add tests for StartCapture (happy path + error cases: missing device, invalid device_id)
 
 ## Behavior knobs required by the YAML DSL
 

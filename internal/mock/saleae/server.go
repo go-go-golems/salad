@@ -2,8 +2,10 @@ package saleae
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
+	"time"
 
 	pb "github.com/go-go-golems/salad/gen/saleae/automation"
 	"github.com/pkg/errors"
@@ -64,6 +66,79 @@ func (s *Server) GetDevices(ctx context.Context, req *pb.GetDevicesRequest) (*pb
 		return nil, err
 	}
 	return out.(*pb.GetDevicesReply), nil
+}
+
+func (s *Server) StartCapture(ctx context.Context, req *pb.StartCaptureRequest) (*pb.StartCaptureReply, error) {
+	out, err := s.exec(ctx, MethodStartCapture, req, func(runtime *RuntimeContext) (any, error) {
+		// Device selection: empty device_id → first physical device
+		deviceID := req.GetDeviceId()
+		if deviceID == "" {
+			for _, device := range runtime.State.Devices {
+				if !device.GetIsSimulation() {
+					deviceID = device.GetDeviceId()
+					break
+				}
+			}
+			if deviceID == "" {
+				return nil, status.Error(codes.NotFound, "StartCapture: no physical device available")
+			}
+		}
+
+		// Validate device exists
+		if runtime.Plan.Behavior.StartCapture.RequireDeviceExists {
+			deviceExists := false
+			for _, device := range runtime.State.Devices {
+				if device.GetDeviceId() == deviceID {
+					deviceExists = true
+					break
+				}
+			}
+			if !deviceExists {
+				return nil, status.Error(codes.NotFound, fmt.Sprintf("StartCapture: device %q not found", deviceID))
+			}
+		}
+
+		// Extract capture mode from CaptureConfiguration
+		captureConfig := req.GetCaptureConfiguration()
+		if captureConfig == nil {
+			return nil, status.Error(codes.InvalidArgument, "StartCapture: capture_configuration is required")
+		}
+
+		var captureMode CaptureMode
+		if manualMode := captureConfig.GetManualCaptureMode(); manualMode != nil {
+			captureMode = CaptureMode{Kind: CaptureModeManual, Duration: 0}
+		} else if timedMode := captureConfig.GetTimedCaptureMode(); timedMode != nil {
+			duration := time.Duration(timedMode.GetDurationSeconds() * float64(time.Second))
+			captureMode = CaptureMode{Kind: CaptureModeTimed, Duration: duration}
+		} else if triggerMode := captureConfig.GetDigitalCaptureMode(); triggerMode != nil {
+			captureMode = CaptureMode{Kind: CaptureModeTrigger, Duration: 0}
+		} else {
+			// Default to manual if no mode specified
+			captureMode = CaptureMode{Kind: CaptureModeManual, Duration: 0}
+		}
+
+		// Create capture state
+		captureID := runtime.State.NextCaptureID
+		runtime.State.NextCaptureID++
+
+		capturePlan := runtime.Plan.Behavior.StartCapture.CreateCapture
+		capture := &CaptureState{
+			ID:        captureID,
+			Status:    capturePlan.Status,
+			Origin:    CaptureOriginStarted,
+			StartedAt: runtime.Clock.Now(),
+			Mode:      captureMode,
+		}
+		runtime.State.Captures[captureID] = capture
+
+		return &pb.StartCaptureReply{
+			CaptureInfo: &pb.CaptureInfo{CaptureId: captureID},
+		}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out.(*pb.StartCaptureReply), nil
 }
 
 func (s *Server) LoadCapture(ctx context.Context, req *pb.LoadCaptureRequest) (*pb.LoadCaptureReply, error) {

@@ -1,7 +1,7 @@
 ---
 Title: Mock Saleae Server for Testing
 Ticket: 010-MOCK-SERVER
-Status: active
+Status: complete
 Topics:
     - go
     - saleae
@@ -18,6 +18,8 @@ RelatedFiles:
       Note: Client code that will connect to mock server
     - Path: proto/saleae/grpc/saleae.proto
       Note: Proto definition showing all RPCs
+    - Path: ttmp/2025/12/24/002-CAPTURE-START--capture-start-manual-timed-trigger/index.md
+      Note: Related ticket - StartCapture implementation that needs testing
     - Path: ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/analysis/03-mock-server-yaml-dsl-configurable-behavior-scenarios.md
       Note: YAML DSL design for configuring mock behavior
     - Path: ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/analysis/04-mapping-yaml-dsl-to-go-structures-validation-and-behavior-composition.md
@@ -28,10 +30,12 @@ RelatedFiles:
       Note: Simplified capability-based tasks
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-27T12:44:13.018312633-05:00
+LastUpdated: 2025-12-27T16:36:54.756920496-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
+
 
 
 

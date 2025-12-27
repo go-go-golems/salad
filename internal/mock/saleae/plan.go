@@ -44,6 +44,7 @@ type CapturePlan struct {
 
 type BehaviorPlan struct {
 	GetDevices          GetDevicesPlan
+	StartCapture        StartCapturePlan
 	LoadCapture         LoadCapturePlan
 	SaveCapture         SaveCapturePlan
 	StopCapture         StopCapturePlan
@@ -55,6 +56,11 @@ type BehaviorPlan struct {
 
 type GetDevicesPlan struct {
 	FilterSimulationDevices bool
+}
+
+type StartCapturePlan struct {
+	RequireDeviceExists bool
+	CreateCapture       CapturePlan
 }
 
 type LoadCapturePlan struct {
@@ -274,6 +280,15 @@ func compileBehavior(cfg Config, defaults DefaultsPlan) (BehaviorPlan, error) {
 		GetDevices: GetDevicesPlan{
 			FilterSimulationDevices: pickBool(cfg.Behavior.GetDevices.FilterSimulationDevices, true),
 		},
+		StartCapture: StartCapturePlan{
+			RequireDeviceExists: pickBool(cfg.Behavior.StartCapture.Validate.RequireDeviceExists, true),
+			CreateCapture: CapturePlan{
+				Status:    CaptureStatusRunning,
+				Origin:    CaptureOriginStarted,
+				StartedAt: time.Time{},
+				Mode:      CaptureMode{Kind: CaptureModeManual, Duration: 0},
+			},
+		},
 		LoadCapture: LoadCapturePlan{
 			RequireNonEmptyFilepath: pickBool(cfg.Behavior.LoadCapture.Validate.RequireNonEmptyFilepath, true),
 			RequireFileExists:       pickBool(cfg.Behavior.LoadCapture.Validate.RequireFileExists, false),
@@ -315,6 +330,20 @@ func compileBehavior(cfg Config, defaults DefaultsPlan) (BehaviorPlan, error) {
 			DigitalFilename:      "digital.bin",
 			AnalogFilename:       "analog.bin",
 		},
+	}
+
+	if cfg.Behavior.StartCapture.OnCall.CreateCapture != nil {
+		create := cfg.Behavior.StartCapture.OnCall.CreateCapture
+		status, err := parseCaptureStatus(create.Status)
+		if err != nil {
+			return BehaviorPlan{}, err
+		}
+		mode, err := parseCaptureMode(create.Mode)
+		if err != nil {
+			return BehaviorPlan{}, err
+		}
+		behavior.StartCapture.CreateCapture.Status = status
+		behavior.StartCapture.CreateCapture.Mode = mode
 	}
 
 	if cfg.Behavior.LoadCapture.OnCall.CreateCapture != nil {
@@ -440,6 +469,13 @@ func compileFaultMatcher(method Method, match *FaultMatchConfig) (func(any) bool
 	switch method {
 	case MethodGetAppInfo, MethodGetDevices:
 		return nil, errors.Errorf("fault matchers not supported for method %s", method)
+	case MethodStartCapture:
+		if match.CaptureID != nil {
+			// StartCapture doesn't have capture_id in request, so this doesn't make sense
+			return nil, errors.Errorf("fault matcher capture_id not supported for StartCapture")
+		}
+		// For now, no matchers supported for StartCapture
+		return nil, nil
 	case MethodLoadCapture:
 		if match.Filepath == nil {
 			return nil, nil

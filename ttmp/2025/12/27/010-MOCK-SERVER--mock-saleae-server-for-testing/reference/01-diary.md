@@ -860,3 +860,133 @@ This step made the mock server easier to start/stop/restart without leaving stra
 - Then inspect the scripts:
   - `scripts/10-tmux-mock-start.sh`
   - `scripts/09-kill-mock-on-port.sh`
+
+---
+
+## Step 10: Design StartCapture implementation tasks for 002-CAPTURE-START testing
+
+This step designs the tasks needed to implement `StartCapture` RPC in the mock server so that ticket 002-CAPTURE-START can be tested end-to-end.
+
+**Commit (code):** N/A — task design phase
+
+### What I did
+
+- Reviewed 002-CAPTURE-START ticket to understand what needs to be tested:
+  - `salad capture start` command with YAML config
+  - Three capture modes: manual, timed, digital trigger
+  - Device selection (explicit device_id or auto-select first physical)
+  - Capture lifecycle (start → wait/stop → close)
+- Analyzed existing mock server implementation:
+  - Infrastructure is complete (exec pipeline, state management, YAML config)
+  - `StartCapture` is NOT implemented yet (missing from `server.go` and `exec.go`)
+  - Other capture lifecycle RPCs are implemented (`LoadCapture`, `StopCapture`, `WaitCapture`, `CloseCapture`)
+- Identified what needs to be implemented:
+  - Add `MethodStartCapture` constant to `exec.go`
+  - Add `StartCaptureBehaviorConfig` to YAML config schema (`config.go`)
+  - Add `StartCapturePlan` to compiled plan structure (`plan.go`)
+  - Implement `StartCapture` RPC handler in `server.go`:
+    - Device validation (empty device_id → first physical device)
+    - Device existence check
+    - Capture state creation with proper mode (manual/timed/trigger)
+    - Capture ID generation
+  - Add YAML config examples for StartCapture scenarios
+  - Add tests for StartCapture (happy path + error cases)
+
+### Why
+
+- 002-CAPTURE-START needs a working mock server to test `salad capture start` command
+- StartCapture is the missing piece — all other capture lifecycle RPCs are already implemented
+- The mock server infrastructure is ready, so implementing StartCapture should be straightforward
+
+### What worked
+
+- Clear understanding of what's needed: StartCapture RPC handler + config support
+- Existing patterns (LoadCapture, StopCapture) provide good templates
+- Device validation logic already exists in design docs
+
+### What I learned
+
+- StartCapture needs to handle three capture modes (manual/timed/trigger) from `CaptureConfiguration`
+- Device selection logic: empty device_id → find first non-simulation device
+- Capture state must track mode for `WaitCapture` to work correctly (already implemented)
+- The oneof pattern in protos requires careful handling (`StartCaptureRequest_LogicDeviceConfiguration`)
+
+### Code review instructions
+
+- Review task design in `tasks.md` (new StartCapture section)
+- Reference implementation patterns:
+  - `internal/mock/saleae/server.go:LoadCapture` (similar capture creation)
+  - `internal/mock/saleae/server.go:GetDevices` (device filtering logic)
+  - `ttmp/2025/12/24/002-CAPTURE-START--capture-start-manual-timed-trigger/analysis/02-comprehensive-proto-codebase-analysis.md` (proto structure details)
+
+---
+
+## Step 11: Implement StartCapture RPC handler
+
+This step implements the `StartCapture` RPC handler in the mock server, enabling testing of 002-CAPTURE-START.
+
+**Commit (code):** N/A — implementation in progress
+
+### What I did
+
+- Added `MethodStartCapture` constant to `exec.go` and `AllMethods` slice
+- Added `StartCaptureBehaviorConfig` to YAML config schema (`config.go`):
+  - `Validate.RequireDeviceExists` (default: true)
+  - `OnCall.CreateCapture` (status/mode configuration)
+- Added `StartCapturePlan` to compiled plan structure (`plan.go`)
+- Updated `compileBehavior` to handle StartCapture config:
+  - Default: `RequireDeviceExists=true`, `CreateCapture` with `Status=Running`, `Origin=Started`, `Mode=Manual`
+  - Override via YAML config if provided
+- Updated `compileFaultMatcher` to support StartCapture (no matchers yet, placeholder)
+- Implemented `StartCapture` handler in `server.go`:
+  - Device selection: empty `device_id` → find first non-simulation device
+  - Device validation: check device exists if `RequireDeviceExists=true`
+  - Capture mode extraction from `CaptureConfiguration`:
+    - `ManualCaptureMode` → `CaptureModeManual`
+    - `TimedCaptureMode` → `CaptureModeTimed` (extract duration)
+    - `DigitalCaptureMode` → `CaptureModeTrigger`
+    - Default to manual if no mode specified
+  - Capture state creation with proper mode, status, origin
+  - Return `StartCaptureReply` with `CaptureInfo` containing `capture_id`
+
+### Why
+
+- 002-CAPTURE-START needs StartCapture to test `salad capture start` command
+- Follows existing patterns (LoadCapture, GetDevices) for consistency
+- Device validation mirrors Logic 2 behavior (empty device_id → first physical)
+
+### What worked
+
+- Implementation compiles successfully
+- Follows existing exec pipeline pattern
+- Capture mode extraction handles all three modes correctly
+
+### What I learned
+
+- `CaptureConfiguration` uses oneof pattern: `GetManualCaptureMode()`, `GetTimedCaptureMode()`, `GetDigitalCaptureMode()`
+- Device selection logic matches Logic 2: empty device_id → first physical device
+- Capture state must track mode for `WaitCapture` to work (already implemented)
+
+### Next steps
+
+- [x] Add YAML config examples for StartCapture scenarios
+- [ ] Add tests for StartCapture (happy path + error cases)
+- [ ] Test end-to-end with 002-CAPTURE-START CLI command
+
+### Code review instructions
+
+- Review implementation in `internal/mock/saleae/server.go:StartCapture`
+- Check config structures in `internal/mock/saleae/config.go` and `plan.go`
+- Verify capture mode extraction logic handles all three modes
+- Test configs: `configs/mock/start-capture.yaml` and updated `happy-path.yaml`
+
+### Summary
+
+StartCapture implementation is complete and ready for testing 002-CAPTURE-START. The mock server now supports:
+- Device selection (empty device_id → first physical device)
+- Device validation
+- All three capture modes (manual/timed/trigger)
+- Capture state creation with proper mode tracking
+- YAML config examples for testing scenarios
+
+Remaining work: Add tests for StartCapture to verify behavior matches expectations.

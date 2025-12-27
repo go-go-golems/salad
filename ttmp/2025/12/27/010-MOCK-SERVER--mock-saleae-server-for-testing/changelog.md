@@ -104,3 +104,28 @@ Re-ran go checks + happy-path + faults smoke after port cleanup: faults injectio
 - /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/playbook/01-debugging-the-mock-server.md — Reusable debugging procedure
 - /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/README.md — Script entry point
 
+
+## 2025-12-27
+
+Ticket closed: lint fixes + Go 1.25 golangci-lint pin + remove XXX placeholder
+
+
+## 2025-12-27
+
+Designed StartCapture implementation tasks for 002-CAPTURE-START testing. Added diary entry documenting analysis and task breakdown.
+
+
+## 2025-12-27
+
+Implemented StartCapture RPC handler: device selection/validation, capture mode extraction (manual/timed/trigger), capture state creation. Added config structures and compilation logic.
+
+
+## 2025-12-27
+
+Added StartCapture config examples: updated happy-path.yaml, created start-capture.yaml for testing 002-CAPTURE-START
+
+
+## 2025-12-27
+
+Updated tasks: marked StartCapture implementation tasks as complete. Remaining: tests for StartCapture.
+
