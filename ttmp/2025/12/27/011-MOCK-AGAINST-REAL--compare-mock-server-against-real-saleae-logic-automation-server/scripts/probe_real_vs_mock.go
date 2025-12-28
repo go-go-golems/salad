@@ -79,7 +79,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
-	real, err := probeEndpoint(ctx, "real", *realHost, *realPort, *missingFilepath)
+	realReport, err := probeEndpoint(ctx, "real", *realHost, *realPort, *missingFilepath)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "probe real endpoint: %v\n", err)
 		os.Exit(2)
@@ -91,7 +91,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	diffs := diffReports(real, mock, diffOptions{
+	diffs := diffReports(realReport, mock, diffOptions{
 		ignoreLaunchPID:  *ignoreLaunchPID,
 		ignoreAppVersion: *ignoreAppVersion,
 		diffDevices:      *diffDevices,
@@ -100,7 +100,7 @@ func main() {
 
 	report := map[string]any{
 		"generated_at": time.Now().Format(time.RFC3339Nano),
-		"real":         real,
+		"real":         realReport,
 		"mock":         mock,
 		"diffs":        diffs,
 	}
@@ -278,38 +278,38 @@ type diffOptions struct {
 	diffMessages     bool
 }
 
-func diffReports(real, mock *EndpointReport, opts diffOptions) []Diff {
+func diffReports(realReport, mockReport *EndpointReport, opts diffOptions) []Diff {
 	var diffs []Diff
 
 	// AppInfo
-	if real.AppInfo != nil && mock.AppInfo != nil {
-		if strings.TrimSpace(real.AppInfo.APIVersion) != strings.TrimSpace(mock.AppInfo.APIVersion) {
-			diffs = append(diffs, Diff{Path: "appinfo.api_version", Real: real.AppInfo.APIVersion, Mock: mock.AppInfo.APIVersion})
+	if realReport.AppInfo != nil && mockReport.AppInfo != nil {
+		if strings.TrimSpace(realReport.AppInfo.APIVersion) != strings.TrimSpace(mockReport.AppInfo.APIVersion) {
+			diffs = append(diffs, Diff{Path: "appinfo.api_version", Real: realReport.AppInfo.APIVersion, Mock: mockReport.AppInfo.APIVersion})
 		}
-		if !opts.ignoreAppVersion && real.AppInfo.ApplicationVersion != mock.AppInfo.ApplicationVersion {
-			diffs = append(diffs, Diff{Path: "appinfo.application_version", Real: real.AppInfo.ApplicationVersion, Mock: mock.AppInfo.ApplicationVersion})
+		if !opts.ignoreAppVersion && realReport.AppInfo.ApplicationVersion != mockReport.AppInfo.ApplicationVersion {
+			diffs = append(diffs, Diff{Path: "appinfo.application_version", Real: realReport.AppInfo.ApplicationVersion, Mock: mockReport.AppInfo.ApplicationVersion})
 		}
-		if !opts.ignoreLaunchPID && real.AppInfo.LaunchPID != mock.AppInfo.LaunchPID {
-			diffs = append(diffs, Diff{Path: "appinfo.launch_pid", Real: real.AppInfo.LaunchPID, Mock: mock.AppInfo.LaunchPID})
+		if !opts.ignoreLaunchPID && realReport.AppInfo.LaunchPID != mockReport.AppInfo.LaunchPID {
+			diffs = append(diffs, Diff{Path: "appinfo.launch_pid", Real: realReport.AppInfo.LaunchPID, Mock: mockReport.AppInfo.LaunchPID})
 		}
-	} else if !(real.AppInfo == nil && mock.AppInfo == nil) {
-		diffs = append(diffs, Diff{Path: "appinfo", Real: real.AppInfo, Mock: mock.AppInfo})
+	} else if realReport.AppInfo != nil || mockReport.AppInfo != nil {
+		diffs = append(diffs, Diff{Path: "appinfo", Real: realReport.AppInfo, Mock: mockReport.AppInfo})
 	}
 
 	// Error-code comparisons (codes always compared; messages optionally)
-	diffs = append(diffs, diffErr("wait_capture_unknown", real.WaitCaptureUnknown, mock.WaitCaptureUnknown, opts.diffMessages)...)
-	diffs = append(diffs, diffErr("stop_capture_unknown", real.StopCaptureUnknown, mock.StopCaptureUnknown, opts.diffMessages)...)
-	diffs = append(diffs, diffErr("close_capture_unknown", real.CloseCaptureUnknown, mock.CloseCaptureUnknown, opts.diffMessages)...)
-	diffs = append(diffs, diffErr("load_capture_empty_path", real.LoadCaptureEmptyPath, mock.LoadCaptureEmptyPath, opts.diffMessages)...)
-	diffs = append(diffs, diffErr("load_capture_missing_path", real.LoadCaptureMissingPath, mock.LoadCaptureMissingPath, opts.diffMessages)...)
+	diffs = append(diffs, diffErr("wait_capture_unknown", realReport.WaitCaptureUnknown, mockReport.WaitCaptureUnknown, opts.diffMessages)...)
+	diffs = append(diffs, diffErr("stop_capture_unknown", realReport.StopCaptureUnknown, mockReport.StopCaptureUnknown, opts.diffMessages)...)
+	diffs = append(diffs, diffErr("close_capture_unknown", realReport.CloseCaptureUnknown, mockReport.CloseCaptureUnknown, opts.diffMessages)...)
+	diffs = append(diffs, diffErr("load_capture_empty_path", realReport.LoadCaptureEmptyPath, mockReport.LoadCaptureEmptyPath, opts.diffMessages)...)
+	diffs = append(diffs, diffErr("load_capture_missing_path", realReport.LoadCaptureMissingPath, mockReport.LoadCaptureMissingPath, opts.diffMessages)...)
 
 	// Devices (often expected to differ)
 	if opts.diffDevices {
-		if !equalDevices(real.DevicesNo, mock.DevicesNo) {
-			diffs = append(diffs, Diff{Path: "devices_no_sim", Real: real.DevicesNo, Mock: mock.DevicesNo})
+		if !equalDevices(realReport.DevicesNo, mockReport.DevicesNo) {
+			diffs = append(diffs, Diff{Path: "devices_no_sim", Real: realReport.DevicesNo, Mock: mockReport.DevicesNo})
 		}
-		if !equalDevices(real.DevicesYes, mock.DevicesYes) {
-			diffs = append(diffs, Diff{Path: "devices_with_sim", Real: real.DevicesYes, Mock: mock.DevicesYes})
+		if !equalDevices(realReport.DevicesYes, mockReport.DevicesYes) {
+			diffs = append(diffs, Diff{Path: "devices_with_sim", Real: realReport.DevicesYes, Mock: mockReport.DevicesYes})
 		}
 	}
 
@@ -317,20 +317,20 @@ func diffReports(real, mock *EndpointReport, opts diffOptions) []Diff {
 	return diffs
 }
 
-func diffErr(path string, real, mock *RPCErrorSummary, diffMessages bool) []Diff {
+func diffErr(path string, realErr, mockErr *RPCErrorSummary, diffMessages bool) []Diff {
 	var diffs []Diff
-	if real == nil && mock == nil {
+	if realErr == nil && mockErr == nil {
 		return nil
 	}
-	if real == nil || mock == nil {
-		diffs = append(diffs, Diff{Path: path, Real: real, Mock: mock})
+	if realErr == nil || mockErr == nil {
+		diffs = append(diffs, Diff{Path: path, Real: realErr, Mock: mockErr})
 		return diffs
 	}
-	if real.Code != mock.Code {
-		diffs = append(diffs, Diff{Path: path + ".code", Real: real.Code, Mock: mock.Code})
+	if realErr.Code != mockErr.Code {
+		diffs = append(diffs, Diff{Path: path + ".code", Real: realErr.Code, Mock: mockErr.Code})
 	}
-	if diffMessages && real.Message != mock.Message {
-		diffs = append(diffs, Diff{Path: path + ".message", Real: real.Message, Mock: mock.Message})
+	if diffMessages && realErr.Message != mockErr.Message {
+		diffs = append(diffs, Diff{Path: path + ".message", Real: realErr.Message, Mock: mockErr.Message})
 	}
 	return diffs
 }
