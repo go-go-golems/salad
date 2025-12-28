@@ -1,0 +1,10 @@
+# I2C analyzer settings template (Saleae Logic 2)
+#
+# Notes:
+# - Keys must match UI-visible setting names exactly.
+# - Channel indices are 0-based.
+settings:
+  SCL: 0
+  SDA: 1
+
+

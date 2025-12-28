@@ -10,6 +10,12 @@ Start a capture, then add an analyzer using a template:
 salad analyzer add --capture-id <id> --name "SPI" --label "spi" --settings-yaml /abs/path/to/configs/analyzers/spi.yaml
 ```
 
+## Included templates (initial pack)
+
+- `spi.yaml`
+- `i2c.yaml`
+- `async-serial.yaml`
+
 Override any template key using typed overrides (recommended):
 
 ```bash

@@ -1,0 +1,17 @@
+# Async Serial analyzer settings template (Saleae Logic 2)
+#
+# Notes:
+# - Keys must match UI-visible setting names exactly.
+# - Channel indices are 0-based.
+#
+# This template may require adjustment depending on your Saleae version.
+settings:
+  Input Channel: 0
+  Bit Rate (Bits/s): 115200
+  Bits per Frame: 8
+  Parity Bit: None
+  Stop Bits: 1
+  Significant Bit: LSB
+  Inverted: false
+
+

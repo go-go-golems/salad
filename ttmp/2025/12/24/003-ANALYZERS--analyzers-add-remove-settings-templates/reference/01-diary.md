@@ -352,3 +352,53 @@ This step validates the “real workflow” you’ll use day-to-day: keep a capt
 - N/A (no code changes). Verify in the Logic 2 UI:
   - In the Analyzers panel, you should see labels: `SPI: CLK0 MOSI1 MISO2 CS3`, `SPI: flash`, `SPI: sensor`.
 
+---
+
+## Step 8: Generate templates from `meta.json` and smoke test on a brand new capture
+
+This step validates a practical “UI → file → automation” loop: configure analyzers in the Logic 2 UI, save the session as `.sal`, extract `meta.json`, then generate settings templates that can be re-applied to a brand new capture using `salad analyzer add`. This is the most reliable way to get exact dropdown strings (CPOL/CPHA, Bits per Transfer, etc.) without manual copying.
+
+**Commit (code):** N/A — runtime smoke test (templates were generated from `/tmp/meta.json`).
+
+### What I did
+- Used `/tmp/meta.json` (unzipped from `/tmp/Session 6.sal`) to generate two templates:
+  - `configs/analyzers/spi-from-session6.yaml`
+  - `configs/analyzers/i2c-from-session6.yaml`
+- Started a new manual capture (digital channels 0..3 enabled):
+  - `capture_id=7`
+- Added analyzers using those templates:
+  - `SPI` with label `from-meta: spi` → `analyzer_id=10038`
+  - `I2C` with label `from-meta: i2c` → `analyzer_id=10041`
+- Removed both analyzers, then stopped and closed the capture.
+
+### Why
+- The gRPC automation API has no method to read back analyzer settings; `meta.json` provides a repeatable extraction path for “known-good” UI configs.
+
+### What worked
+- `AddAnalyzer` succeeded for both SPI and I2C using only the extracted templates.
+- `RemoveAnalyzer` succeeded for both analyzer ids.
+
+### What didn't work
+- A *second* stop attempt after closing the capture returned “Capture Id does not exist”, which is expected once the capture is closed.
+
+### What I learned
+- `meta.json` includes:
+  - setting keys (UI titles), and
+  - dropdown option strings (`dropdownText`) plus the selected value,
+  which makes it an excellent source for authoring templates.
+
+### What was tricky to build
+- Ensuring dropdown selections are emitted as strings matching the UI text (per Saleae automation docs), not internal numeric codes.
+
+### What warrants a second pair of eyes
+- Confirm whether all analyzers accept dropdown selections as UI strings consistently across Logic 2 versions.
+
+### What should be done in the future
+- Consider a first-class command `salad analyzer template import --meta-json ...` if this workflow becomes common (optional; script-based is fine).
+
+### Code review instructions
+- With a real server running:
+  - Start capture with channels 0..3 enabled.
+  - Add SPI: `salad analyzer add --capture-id <id> --name "SPI" --settings-yaml .../configs/analyzers/spi-from-session6.yaml`
+  - Add I2C: `salad analyzer add --capture-id <id> --name "I2C" --settings-yaml .../configs/analyzers/i2c-from-session6.yaml`
+
