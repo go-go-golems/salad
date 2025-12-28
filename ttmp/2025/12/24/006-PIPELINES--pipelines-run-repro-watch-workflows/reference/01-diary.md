@@ -115,3 +115,40 @@ This step mirrors the ticket 005 pattern: keep a runnable “real server” scri
   - generates a small pipeline config in `/tmp`
   - runs `salad run --config ...` against a real server (defaults to `127.0.0.1:10430`)
   - requires you to set `SAL=/abs/path/to/capture.sal`
+
+## Step 6: Manually validate `salad run` against the mock server (tmux playbook)
+
+This step validates the full “human workflow” path, not just `go test`. It uses the ticket-010 tmux scripts to start/stop the mock server and explicitly verifies the placeholder artifacts written to `/tmp`.
+
+**What I ran (from `salad/` repo root):**
+- `./ttmp/2025/12/24/006-PIPELINES--pipelines-run-repro-watch-workflows/scripts/03-run-against-mock.sh`
+
+### What worked
+- The script successfully:
+  - killed an existing listener on `:10431` (avoiding the classic port-collision trap)
+  - started `salad-mock` in tmux with scenario `scripts/00-mock-happy-path-with-table.yaml`
+  - ran the pipeline config `scripts/01-pipeline-mock.yaml`
+  - verified output files exist and contain expected markers
+  - stopped the tmux session
+
+### Evidence (high-signal excerpts)
+- Pipeline CLI output:
+  - `capture_id=1`
+  - `analyzer_id=10000 label="spi"`
+  - `artifact=/tmp/salad-pipeline-006/raw`
+  - `artifact=/tmp/salad-pipeline-006/table.csv`
+  - `ok`
+- Placeholder contents:
+  - `/tmp/salad-pipeline-006/raw/digital.csv`:
+    - `SALAD_MOCK_DIGITAL_CSV capture_id=1`
+    - `digital=[0 1 2]`
+  - `/tmp/salad-pipeline-006/table.csv`:
+    - `SALAD_MOCK_DATA_TABLE_CSV capture_id=1`
+    - `iso8601_timestamp=true`
+    - `analyzers=[10000:RADIX_TYPE_HEXADECIMAL]`
+    - `filter.query=0xAA`
+    - `filter.columns=[data]`
+
+### What warrants a second pair of eyes
+- The wrapper script always stops the tmux session at the end; if you want to inspect server logs interactively, you may prefer to comment out the stop step and tail:
+  - `tail -f ttmp/2025/12/27/010-MOCK-SERVER--mock-saleae-server-for-testing/scripts/logs/salad-mock-10431.log`
