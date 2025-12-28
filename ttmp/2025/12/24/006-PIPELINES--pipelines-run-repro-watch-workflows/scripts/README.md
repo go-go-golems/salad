@@ -31,4 +31,14 @@ Expected:
 - `artifact=/tmp/salad-pipeline-006/table.csv`
 - final `ok`
 
+## Real-server validation
+
+If you have Logic 2 running with automation enabled (see ticket 001 playbook), you can run:
+
+```bash
+SAL="/tmp/Session 6.sal" ./ttmp/2025/12/24/006-PIPELINES--pipelines-run-repro-watch-workflows/scripts/02-real-run.sh
+```
+
+This generates a small config at `/tmp/salad-pipeline-006-real.yaml` and runs `salad run` against your real server.
+
 

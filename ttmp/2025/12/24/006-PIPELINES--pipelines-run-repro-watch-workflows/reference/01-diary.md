@@ -104,3 +104,13 @@ This step stores runnable scripts/configs under the 006 ticket so it’s easy to
 - Added `scripts/README.md` with copy/paste commands for:
   - starting `salad-mock` via `ttmp/.../010.../scripts/10-tmux-mock-start.sh`
   - running `salad run --config ...` against the mock server
+
+## Step 5: Add a ticket-local real-server validation script
+
+This step mirrors the ticket 005 pattern: keep a runnable “real server” script in the ticket so we can quickly validate the pipeline runner against an actual Logic 2 instance.
+
+### What I did
+- Added `ttmp/2025/12/24/006-PIPELINES--pipelines-run-repro-watch-workflows/scripts/02-real-run.sh`:
+  - generates a small pipeline config in `/tmp`
+  - runs `salad run --config ...` against a real server (defaults to `127.0.0.1:10430`)
+  - requires you to set `SAL=/abs/path/to/capture.sal`

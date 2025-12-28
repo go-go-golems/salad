@@ -9,6 +9,6 @@
 - [x] Implement `salad run --config <file>` (v1: capture load → analyzers add → exports → close)
 - [x] Add at least one minimal pipeline config example under `ttmp/.../006.../scripts/` (or `configs/pipelines/`)
 - [ ] Add integration test(s) against mock server (reuse `configs/mock/happy-path.yaml` and existing smoke scripts)
-- [ ] Add real-server validation script/playbook (optional, but recommended) mirroring ticket 005’s approach
+- [x] Add real-server validation script/playbook (optional, but recommended) mirroring ticket 005’s approach
 - [ ] Commit when `go test ./...` is green; commit docs updates separately
 
