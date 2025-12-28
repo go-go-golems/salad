@@ -1,0 +1,6 @@
+title: "🐛 Guard unknown capture status handling"
+description: |
+  - reject OK status_on_unknown_capture_id at compile time
+  - add runtime guard to avoid nil capture deref on missing IDs
+  - Tests:
+    - ⚠️ `timeout 60s go test ./...` (timed out: exit status 124)

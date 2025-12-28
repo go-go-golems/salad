@@ -1,0 +1,14 @@
+# SPI analyzer settings template (Saleae Logic 2)
+#
+# Notes:
+# - Keys must match UI-visible setting names exactly.
+# - Channel indices are 0-based.
+#
+# This template is known to work (real-server smoke test) when these channels exist in the capture.
+settings:
+  Clock: 0
+  MOSI: 1
+  MISO: 2
+  Enable: 3
+
+

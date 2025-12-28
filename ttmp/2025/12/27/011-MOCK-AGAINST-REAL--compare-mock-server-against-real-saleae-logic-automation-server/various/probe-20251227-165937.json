@@ -1,0 +1,131 @@
+{
+  "diffs": [
+    {
+      "path": "close_capture_unknown.code",
+      "real": "Aborted",
+      "mock": "InvalidArgument"
+    },
+    {
+      "path": "load_capture_empty_path.code",
+      "real": "Aborted",
+      "mock": "InvalidArgument"
+    },
+    {
+      "path": "load_capture_missing_path.code",
+      "real": "Aborted",
+      "mock": "OK"
+    },
+    {
+      "path": "stop_capture_unknown.code",
+      "real": "Aborted",
+      "mock": "InvalidArgument"
+    },
+    {
+      "path": "wait_capture_unknown.code",
+      "real": "Aborted",
+      "mock": "InvalidArgument"
+    }
+  ],
+  "generated_at": "2025-12-27T16:59:37.53030468-05:00",
+  "mock": {
+    "name": "mock",
+    "addr": "127.0.0.1:10431",
+    "appinfo": {
+      "application_version": "2.3.56-mock",
+      "api_version": "1.0.0",
+      "launch_pid": 4242
+    },
+    "devices_no_sim": [
+      {
+        "device_id": "DEV1",
+        "device_type": "DEVICE_TYPE_LOGIC_PRO_8",
+        "is_simulation": false
+      }
+    ],
+    "devices_with_sim": [
+      {
+        "device_id": "DEV1",
+        "device_type": "DEVICE_TYPE_LOGIC_PRO_8",
+        "is_simulation": false
+      }
+    ],
+    "wait_capture_unknown": {
+      "code": "InvalidArgument",
+      "message": "capture 999999999 not found"
+    },
+    "stop_capture_unknown": {
+      "code": "InvalidArgument",
+      "message": "capture 999999999 not found"
+    },
+    "close_capture_unknown": {
+      "code": "InvalidArgument",
+      "message": "capture 999999999 not found"
+    },
+    "load_capture_empty_path": {
+      "code": "InvalidArgument",
+      "message": "LoadCapture: filepath is required"
+    },
+    "load_capture_missing_path": {
+      "code": "OK",
+      "message": ""
+    }
+  },
+  "real": {
+    "name": "real",
+    "addr": "127.0.0.1:10430",
+    "appinfo": {
+      "application_version": "2.4.40",
+      "api_version": "1.0.0",
+      "launch_pid": 365137
+    },
+    "devices_no_sim": [
+      {
+        "device_id": "9E7A9F3533975A55",
+        "device_type": "DEVICE_TYPE_LOGIC_PRO_8",
+        "is_simulation": false
+      }
+    ],
+    "devices_with_sim": [
+      {
+        "device_id": "9E7A9F3533975A55",
+        "device_type": "DEVICE_TYPE_LOGIC_PRO_8",
+        "is_simulation": false
+      },
+      {
+        "device_id": "F4241",
+        "device_type": "DEVICE_TYPE_LOGIC_PRO_16",
+        "is_simulation": true
+      },
+      {
+        "device_id": "F4243",
+        "device_type": "DEVICE_TYPE_LOGIC_8",
+        "is_simulation": true
+      },
+      {
+        "device_id": "F4244",
+        "device_type": "DEVICE_TYPE_LOGIC_PRO_8",
+        "is_simulation": true
+      }
+    ],
+    "wait_capture_unknown": {
+      "code": "Aborted",
+      "message": "10: Capture Id \"999999999\" does not exist."
+    },
+    "stop_capture_unknown": {
+      "code": "Aborted",
+      "message": "10: Capture Id \"999999999\" does not exist."
+    },
+    "close_capture_unknown": {
+      "code": "Aborted",
+      "message": "10: Capture Id \"999999999\" does not exist."
+    },
+    "load_capture_empty_path": {
+      "code": "Aborted",
+      "message": "10: Filepath must not be empty"
+    },
+    "load_capture_missing_path": {
+      "code": "Aborted",
+      "message": "1: ENOENT: no such file or directory, stat '/this/does/not/exist.sal'"
+    }
+  }
+}

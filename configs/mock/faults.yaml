@@ -1,0 +1,25 @@
+version: 1
+scenario: savecapture-fault
+
+defaults:
+  ids:
+    deterministic: true
+    capture_id_start: 10
+
+fixtures:
+  devices:
+    - device_id: "SIM1"
+      device_type: DEVICE_TYPE_LOGIC_8
+      is_simulation: true
+  captures:
+    - capture_id: 10
+      status: completed
+      origin: loaded
+
+faults:
+  - when:
+      method: SaveCapture
+      nth_call: 1
+    respond:
+      status: UNAVAILABLE
+      message: "temporary mock failure"

@@ -7,6 +7,7 @@ import (
 	pb "github.com/go-go-golems/salad/gen/saleae/automation"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -16,20 +17,41 @@ type Client struct {
 }
 
 func New(ctx context.Context, cfg Config) (*Client, error) {
-	if _, ok := ctx.Deadline(); !ok && cfg.Timeout > 0 {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	dialCtx := ctx
+	if _, ok := dialCtx.Deadline(); !ok && cfg.Timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
+		dialCtx, cancel = context.WithTimeout(dialCtx, cfg.Timeout)
 		defer cancel()
 	}
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		cfg.Addr(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "dial saleae automation grpc at %s", cfg.Addr())
+	}
+
+	// grpc.NewClient is lazy; preserve prior DialContext+WithBlock semantics by
+	// forcing a connection attempt and waiting until READY (or the context times out).
+	conn.Connect()
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			break
+		}
+		if state == connectivity.Shutdown {
+			_ = conn.Close()
+			return nil, errors.Errorf("grpc connection shutdown while connecting to %s", cfg.Addr())
+		}
+		if !conn.WaitForStateChange(dialCtx, state) {
+			_ = conn.Close()
+			return nil, errors.Wrapf(dialCtx.Err(), "connect to saleae automation grpc at %s", cfg.Addr())
+		}
 	}
 
 	return &Client{
@@ -217,6 +239,101 @@ func (c *Client) ExportRawDataBinary(
 	}
 	_, err := c.manager.ExportRawDataBinary(ctx, req)
 	return errors.Wrap(err, "ExportRawDataBinary RPC")
+}
+
+func (c *Client) ExportDataTableCsv(
+	ctx context.Context,
+	captureID uint64,
+	filepath string,
+	analyzers []*pb.DataTableAnalyzerConfiguration,
+	iso8601Timestamp bool,
+	exportColumns []string,
+	filter *pb.DataTableFilter,
+) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("ExportDataTableCsv: capture-id must be non-zero")
+	}
+	if filepath == "" {
+		return errors.New("ExportDataTableCsv: filepath is required")
+	}
+	if len(analyzers) == 0 {
+		return errors.New("ExportDataTableCsv: at least one analyzer is required")
+	}
+	for i, a := range analyzers {
+		if a == nil {
+			return errors.Errorf("ExportDataTableCsv: analyzers[%d] is nil", i)
+		}
+		if a.GetAnalyzerId() == 0 {
+			return errors.Errorf("ExportDataTableCsv: analyzers[%d].analyzer_id must be non-zero", i)
+		}
+		if a.GetRadixType() == pb.RadixType_RADIX_TYPE_UNSPECIFIED {
+			return errors.Errorf("ExportDataTableCsv: analyzers[%d].radix_type must be specified", i)
+		}
+	}
+
+	req := &pb.ExportDataTableCsvRequest{
+		CaptureId:        captureID,
+		Filepath:         filepath,
+		Analyzers:        analyzers,
+		Iso8601Timestamp: iso8601Timestamp,
+		ExportColumns:    exportColumns,
+		Filter:           filter,
+	}
+	_, err := c.manager.ExportDataTableCsv(ctx, req)
+	return errors.Wrap(err, "ExportDataTableCsv RPC")
+}
+
+func (c *Client) AddAnalyzer(
+	ctx context.Context,
+	captureID uint64,
+	analyzerName string,
+	analyzerLabel string,
+	settings map[string]*pb.AnalyzerSettingValue,
+) (uint64, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return 0, errors.New("AddAnalyzer: capture-id must be non-zero")
+	}
+	if analyzerName == "" {
+		return 0, errors.New("AddAnalyzer: analyzer-name is required")
+	}
+	if settings == nil {
+		settings = map[string]*pb.AnalyzerSettingValue{}
+	}
+
+	reply, err := c.manager.AddAnalyzer(ctx, &pb.AddAnalyzerRequest{
+		CaptureId:     captureID,
+		AnalyzerName:  analyzerName,
+		AnalyzerLabel: analyzerLabel,
+		Settings:      settings,
+	})
+	if err != nil {
+		return 0, errors.Wrap(err, "AddAnalyzer RPC")
+	}
+	return reply.GetAnalyzerId(), nil
+}
+
+func (c *Client) RemoveAnalyzer(ctx context.Context, captureID uint64, analyzerID uint64) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("RemoveAnalyzer: capture-id must be non-zero")
+	}
+	if analyzerID == 0 {
+		return errors.New("RemoveAnalyzer: analyzer-id must be non-zero")
+	}
+
+	_, err := c.manager.RemoveAnalyzer(ctx, &pb.RemoveAnalyzerRequest{
+		CaptureId:  captureID,
+		AnalyzerId: analyzerID,
+	})
+	return errors.Wrap(err, "RemoveAnalyzer RPC")
 }
 
 // DialTimeout is retained for future use (eg separate dial/RPC timeouts).

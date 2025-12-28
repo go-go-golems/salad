@@ -10,10 +10,24 @@ Topics:
 DocType: analysis
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: cmd/salad/cmd/export_table.go
+      Note: '`salad export table` cobra command (flag parsing + request mapping)'
+    - Path: cmd/salad/cmd/export.go
+      Note: Registers `export table` under the export subtree
+    - Path: cmd/salad/cmd/util.go
+      Note: CSV parsing helper used by `export table` (`parseStringCSV`)
+    - Path: internal/saleae/client.go
+      Note: '`Client.ExportDataTableCsv` wrapper + request validation'
+    - Path: internal/mock/saleae/server.go
+      Note: Mock server `ExportDataTableCsv` implementation (optional placeholder file write)
+    - Path: internal/mock/saleae/export_table_cli_test.go
+      Note: CLI integration test for `salad export table` against mock server
+    - Path: proto/saleae/grpc/saleae.proto
+      Note: Upstream proto definition for request/filter/radix
 ExternalSources: []
-Summary: "Implementation approach for `salad export table` using ExportDataTableCsvRequest (multi-analyzer export, radix selection, column selection, filtering, timestamps)."
-LastUpdated: 2025-12-24T22:42:12.674457974-05:00
+Summary: "Implemented `salad export table` (ExportDataTableCsv): multi-analyzer export with per-analyzer radix, optional column selection, optional filtering, and ISO8601 timestamps."
+LastUpdated: 2025-12-28T00:00:00Z
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -49,44 +63,74 @@ Relevant RPC and message types:
 
 ### Minimal command
 
-- `salad export table --capture-id <id> --filepath /abs/out.csv --analyzer 123:hex`
+- `salad export table --capture-id <id> --filepath /abs/out.csv --analyzer 10025:hex`
 
-### Flags
+### Flags (as implemented)
 
-- `--analyzer <id>:<radix>` (repeatable)
-  - radix: `hex|dec|bin|ascii` (map to `pb.RadixType`)
-- `--iso8601-timestamp`
-- `--columns time,data,address` (optional; if empty, export all)
-- Filter:
+- **Required**
+  - `--capture-id <id>`
+  - `--filepath </abs/out.csv>`
+  - `--analyzer <id>:<radix>` (repeatable)
+    - radix: `hex|dec|bin|ascii`
+
+- **Optional**
+  - `--iso8601-timestamp`
+  - `--columns time,data,address`  
+    If empty, `export_columns` is left empty and Logic 2 exports all columns.
   - `--filter-query "0xAA"`
-  - `--filter-columns data,address` (optional; if empty, filter all columns)
+  - `--filter-columns data,address`  
+    If empty, Logic 2 searches all columns. If provided, **requires** `--filter-query`.
 
-## Implementation approach
+### Output
 
-### Parsing analyzer selectors
+- On success prints `ok` (consistent with existing `export raw-*` commands).
 
-- Parse repeatable `--analyzer` into `[]pb.DataTableAnalyzerConfiguration`.
-- Strict validation:
-  - analyzer id non-zero
-  - known radix
+## Implementation details (as shipped)
 
-### Client wrapper
+### Request mapping
 
-- Add `ExportDataTableCsv(...)` wrapper to `internal/saleae/client.go`.
+- `salad export table` maps to `pb.ExportDataTableCsvRequest`:
+  - `capture_id` ← `--capture-id`
+  - `filepath` ← `--filepath`
+  - `analyzers` ← parsed from repeatable `--analyzer <id>:<radix>` into `[]*pb.DataTableAnalyzerConfiguration`
+  - `iso8601_timestamp` ← `--iso8601-timestamp`
+  - `export_columns` ← parsed from `--columns` (CSV list)
+  - `filter` ← optional `DataTableFilter{query, columns}` derived from `--filter-*`
 
-### Files likely to change/add
+### Strict validation
 
-- `cmd/salad/cmd/export_table.go` (new subcommand under `export`)
-- `cmd/salad/cmd/util.go` (add helper to parse analyzer selectors + csv column lists)
-- `internal/saleae/client.go` (RPC wrapper)
+- CLI validates:
+  - at least one `--analyzer` entry
+  - each analyzer selector matches `<id>:<radix>`
+  - analyzer id is non-zero
+  - radix is known (`hex|dec|bin|ascii`)
+  - `--filter-columns` implies `--filter-query`
 
-## Testing strategy
+- Client validates again (defense-in-depth):
+  - `capture_id != 0`
+  - non-empty `filepath`
+  - non-empty analyzers list, no nil entries
+  - `radix_type != RADIX_TYPE_UNSPECIFIED`
 
-- Unit tests for flag parsing:
-  - analyzer selectors, columns, filters
-- Manual tests:
-  - load capture → add analyzer(s) → export table → verify CSV exists and is non-empty
+### CSV list parsing
 
-## Open questions / decisions
+- `--columns` and `--filter-columns` are parsed as comma-separated lists:
+  - trim whitespace
+  - drop empty items
 
-- Output handling: should we print `ok` only, or print the output filepath and row count (row count would require reading file)?
+## Testing
+
+### Mock-server integration test
+
+- `internal/mock/saleae/export_table_cli_test.go` runs:
+  - `salad capture load` → `salad analyzer add` → `salad export table`
+  - against the repo’s mock server, with placeholder file writing enabled for `ExportDataTableCsv`
+  - and asserts the output CSV file exists and contains expected markers (including filter markers)
+
+### Command to run locally
+
+- `cd salad && go test ./... -count=1`
+
+## Decisions
+
+- **Output**: prints `ok` only (no row count).

@@ -49,6 +49,8 @@ func init() {
 
 	rootCmd.AddCommand(appinfoCmd)
 	rootCmd.AddCommand(devicesCmd)
+	rootCmd.AddCommand(analyzerCmd)
 	rootCmd.AddCommand(captureCmd)
 	rootCmd.AddCommand(exportCmd)
+	rootCmd.AddCommand(runCmd)
 }

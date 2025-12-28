@@ -34,7 +34,7 @@ var captureLoadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		id, err := c.LoadCapture(ctx, filepath)
 		if err != nil {
@@ -61,7 +61,7 @@ var captureSaveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		if err := c.SaveCapture(ctx, captureID, filepath); err != nil {
 			return err
@@ -87,7 +87,7 @@ var captureStopCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		if err := c.StopCapture(ctx, captureID); err != nil {
 			return err
@@ -113,7 +113,7 @@ var captureWaitCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		if err := c.WaitCapture(ctx, captureID); err != nil {
 			return err
@@ -139,7 +139,7 @@ var captureCloseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 
 		if err := c.CloseCapture(ctx, captureID); err != nil {
 			return err

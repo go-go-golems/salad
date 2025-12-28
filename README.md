@@ -56,3 +56,23 @@
 |   |_| ||       ||       ||   |___ | ||_|| | _____| |
 |_______||_______||_______||_______||_|   |_||_______|
 ```
+
+## Mock Saleae server
+
+The repo includes a YAML-driven mock Saleae Logic 2 Automation server for local testing and CI.
+
+- User guide: `pkg/doc/mock-server-user-guide.md`
+- Developer guide: `pkg/doc/mock-server-developer-guide.md`
+- Example scenarios: `configs/mock/`
+
+Run the mock server:
+
+```bash
+go run ./cmd/salad-mock --config configs/mock/happy-path.yaml --port 10431
+```
+
+Point the CLI at it:
+
+```bash
+go run ./cmd/salad --host 127.0.0.1 --port 10431 appinfo
+```

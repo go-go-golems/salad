@@ -1,0 +1,19 @@
+#
+# Generated from: /tmp/Session 6.sal (meta.json)
+# Session: Session 6
+# Analyzer: nodeId=10044 type='Async Serial' name='Async Serial'
+#
+# Notes:
+# - Keys/strings must match Logic 2 UI labels/options exactly.
+# - Dropdowns are emitted as UI-visible strings (dropdownText) by default.
+# - Intended usage: `salad analyzer add --settings-yaml <this-file>`
+#
+settings:
+  Bit Rate (Bits/s): 115200
+  Bits per Frame: "8 Bits per Transfer (Standard)"
+  Input Channel: 0
+  Mode: "Normal"
+  Parity Bit: "No Parity Bit (Standard)"
+  Signal inversion: "Non Inverted (Standard)"
+  Significant Bit: "Least Significant Bit Sent First (Standard)"
+  Stop Bits: "1 Stop Bit (Standard)"

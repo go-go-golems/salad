@@ -1,0 +1,18 @@
+#
+# Extracted from: /tmp/Session 6.sal → meta.json (UI-configured analyzer)
+# Ticket: 003-ANALYZERS
+#
+# Notes:
+# - Keys/strings must match Logic 2 UI labels/options exactly.
+# - This file is intended to be passed to: `salad analyzer add --settings-yaml ...`
+#
+settings:
+  Bits per Transfer: "8 Bits per Transfer (Standard)"
+  Clock: 0
+  Clock Phase: "Data is Valid on Clock Leading Edge (CPHA = 0)"
+  Clock State: "Clock is Low when inactive (CPOL = 0)"
+  Enable: 3
+  Enable Line: "Enable line is Active Low (Standard)"
+  MISO: 2
+  MOSI: 1
+  Significant Bit: "Most Significant Bit First (Standard)"
