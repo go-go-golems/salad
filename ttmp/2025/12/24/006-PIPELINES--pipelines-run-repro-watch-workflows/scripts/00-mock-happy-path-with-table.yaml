@@ -1,0 +1,60 @@
+version: 1
+scenario: happy-path-with-table
+
+defaults:
+  ids:
+    deterministic: true
+    capture_id_start: 1
+  timing:
+    wait_capture_policy: immediate
+
+fixtures:
+  appinfo:
+    application_version: "2.3.56-mock"
+    api_version:
+      major: 1
+      minor: 0
+      patch: 0
+    launch_pid: 4242
+  devices:
+    - device_id: "DEV1"
+      device_type: DEVICE_TYPE_LOGIC_PRO_8
+      is_simulation: false
+
+behavior:
+  StartCapture:
+    validate:
+      require_device_exists: true
+    on_call:
+      create_capture:
+        status: running
+        mode:
+          kind: manual
+  LoadCapture:
+    on_call:
+      create_capture:
+        status: completed
+        mode:
+          kind: timed
+          duration_seconds: 0
+  SaveCapture:
+    side_effect:
+      write_placeholder_file: true
+      placeholder_bytes: "SALAD_MOCK_SAL_V1\n"
+  ExportRawDataCsv:
+    side_effect:
+      write_placeholders:
+        digital_csv: true
+        analog_csv: true
+      include_requested_channels_in_file: true
+  ExportRawDataBinary:
+    side_effect:
+      write_placeholders:
+        digital_bin: true
+        analog_bin: true
+  ExportDataTableCsv:
+    side_effect:
+      write_placeholder_file: true
+      include_request_in_file: true
+
+

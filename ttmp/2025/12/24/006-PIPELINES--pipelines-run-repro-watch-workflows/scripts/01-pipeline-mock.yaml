@@ -1,0 +1,30 @@
+version: 1
+
+capture:
+  load:
+    filepath: /tmp/mock.sal
+
+analyzers:
+  - name: "SPI"
+    label: "spi"
+    settings_yaml: "configs/analyzers/spi.yaml"
+
+exports:
+  - type: raw-csv
+    directory: /tmp/salad-pipeline-006/raw
+    digital: [0, 1, 2]
+    iso8601_timestamp: true
+  - type: table-csv
+    filepath: /tmp/salad-pipeline-006/table.csv
+    iso8601_timestamp: true
+    analyzers:
+      - ref: "spi"
+        radix: hex
+    filter:
+      query: "0xAA"
+      columns: ["data"]
+
+cleanup:
+  close_capture: true
+
+
