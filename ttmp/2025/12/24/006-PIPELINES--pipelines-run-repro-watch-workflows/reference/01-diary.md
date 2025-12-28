@@ -104,6 +104,7 @@ This step stores runnable scripts/configs under the 006 ticket so it’s easy to
 - Added `scripts/README.md` with copy/paste commands for:
   - starting `salad-mock` via `ttmp/.../010.../scripts/10-tmux-mock-start.sh`
   - running `salad run --config ...` against the mock server
+  - running a wrapper script that does “kill port → start tmux mock → run pipeline → verify artifacts → stop mock”
 
 ## Step 5: Add a ticket-local real-server validation script
 

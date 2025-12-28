@@ -31,6 +31,14 @@ Expected:
 - `artifact=/tmp/salad-pipeline-006/table.csv`
 - final `ok`
 
+### One-command wrapper (recommended)
+
+This wraps the above plus port-collision cleanup and tmux lifecycle:
+
+```bash
+./ttmp/2025/12/24/006-PIPELINES--pipelines-run-repro-watch-workflows/scripts/03-run-against-mock.sh
+```
+
 ## Real-server validation
 
 If you have Logic 2 running with automation enabled (see ticket 001 playbook), you can run:
