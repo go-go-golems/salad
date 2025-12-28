@@ -13,7 +13,7 @@
 //
 // Usage
 // -----
-//   go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/05-real-validate-session6-templates.go \
+//   go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/05-real-validate-session6-templates/main.go \
 //     --host 127.0.0.1 --port 10430 --timeout 12s \
 //     --templates-dir /home/manuel/workspaces/2025-12-27/salad-pass/salad/configs/analyzers \
 //     --prefix session6-

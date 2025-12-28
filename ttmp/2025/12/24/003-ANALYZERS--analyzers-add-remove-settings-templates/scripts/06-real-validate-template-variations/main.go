@@ -13,7 +13,7 @@
 //
 // Usage
 // -----
-//   go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/06-real-validate-template-variations.go \
+//   go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/06-real-validate-template-variations/main.go \
 //     --host 127.0.0.1 --port 10430 --timeout 25s \
 //     --source-sal "/tmp/Session 6.sal" \
 //     --templates-dir "/home/manuel/workspaces/2025-12-27/salad-pass/salad/configs/analyzers" \

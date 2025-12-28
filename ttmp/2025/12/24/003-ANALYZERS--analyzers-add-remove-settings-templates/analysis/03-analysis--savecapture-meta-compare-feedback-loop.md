@@ -19,7 +19,7 @@ RelatedFiles:
     Note: Parses analyzer template settings files into the proto settings map.
   - Path: /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/02-extract-analyzer-settings-from-meta-json.py
     Note: Converts meta.json analyzers into `settings:` YAML blocks (dropdownText by default).
-  - Path: /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/03-compare-meta-json-to-template.go
+  - Path: /home/manuel/workspaces/2025-12-27/salad-pass/salad/ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/03-compare-meta-json-to-template/main.go
     Note: Compares one analyzer’s meta.json settings against a template file.
 ExternalSources: []
 Summary: "Describes a practical, automatable feedback loop: apply analyzer template → SaveCapture → extract meta.json → compare to expected, including remote-host filesystem constraints."
@@ -145,7 +145,7 @@ PY /abs/out.sal /tmp/meta.json
 Use the comparator script:
 
 ```bash
-go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/03-compare-meta-json-to-template.go \
+go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/03-compare-meta-json-to-template/main.go \
   --meta /tmp/meta.json \
   --node-id 12345 \
   --template /abs/template.yaml

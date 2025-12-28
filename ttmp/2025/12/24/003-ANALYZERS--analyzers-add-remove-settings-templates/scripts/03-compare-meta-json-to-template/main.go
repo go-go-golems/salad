@@ -14,7 +14,7 @@
 //
 // Usage
 // -----
-//   go run ./ttmp/.../scripts/03-compare-meta-json-to-template.go \
+//   go run ./ttmp/.../scripts/03-compare-meta-json-to-template/main.go \
 //     --meta /tmp/meta.json \
 //     --node-id 10038 \
 //     --template /abs/path/to/configs/analyzers/spi-from-session6.yaml

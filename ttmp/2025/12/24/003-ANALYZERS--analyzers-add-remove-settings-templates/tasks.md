@@ -11,8 +11,8 @@ The goal here is a **small number of tasks**, each representing a meaningful cap
 
 ## Mock + tests (to make it CI-friendly)
 
-- [ ] Extend the mock server (ticket 010) to implement `AddAnalyzer`/`RemoveAnalyzer` + in-memory analyzer state
-- [ ] Add table-driven tests that run the CLI against the mock for:
+- [x] Extend the mock server (ticket 010) to implement `AddAnalyzer`/`RemoveAnalyzer` + in-memory analyzer state
+- [x] Add table-driven tests that run the CLI against the mock for:
   - add success (returns analyzer_id)
   - remove success
   - missing capture id behavior

@@ -402,3 +402,29 @@ This step validates a practical “UI → file → automation” loop: configure
   - Add SPI: `salad analyzer add --capture-id <id> --name "SPI" --settings-yaml .../configs/analyzers/spi-from-session6.yaml`
   - Add I2C: `salad analyzer add --capture-id <id> --name "I2C" --settings-yaml .../configs/analyzers/i2c-from-session6.yaml`
 
+---
+
+## Step 9: Validate templates at scale + validate parameter variations (real server)
+
+This step turned the “UI-derived template” approach into something we can trust: we generated templates for many analyzers from a saved `.sal`, validated all of them against a fresh capture, and then validated that *changing* key parameters (e.g. Async Serial baud rate, SPI mode/bits) is faithfully preserved in a saved `.sal` via `meta.json`.
+
+**Commit (code):** e54a15d20f719705a7419c28318fc3b633369cf0 — "Analyzers: extract .sal templates + validate settings"
+
+### What I did
+- Generated templates for all analyzers present in an updated `Session 6.sal`:
+  - `configs/analyzers/session6-*.yaml`
+- Added and ran real-server validation scripts:
+  - `scripts/05-real-validate-session6-templates/` (bulk add/remove validation)
+  - `scripts/06-real-validate-template-variations/` (baudrate and SPI mode/bits variations + SaveCapture→meta.json compare)
+
+### Why
+- It’s easy to create a template that “looks plausible” but fails on a real server (dropdown text mismatch, missing required keys, etc.). Bulk validation makes this fast to catch.
+- Parameter variation tests ensure our settings plumbing and UI-derived dropdown strings are actually accepted and persisted.
+
+### What worked
+- Bulk validation succeeded across all generated templates against a fresh capture.
+- Variation validation succeeded for multiple Async Serial baud rates and SPI mode/bits variations, and those settings round-tripped through a saved `.sal`.
+
+### What warrants a second pair of eyes
+- Confirm whether we want strict equality vs “subset” comparison when comparing template expectations to meta.json (meta.json includes defaults and UI-only fields).
+

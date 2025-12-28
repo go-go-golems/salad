@@ -23,3 +23,11 @@ Implemented analyzer verbs + settings parsing and validated against a real Logic
 Added initial analyzer template pack (SPI) and verified it against the real server:
 - `configs/analyzers/spi.yaml` + `configs/analyzers/README.md` (see diary Step 6)
 
+## 2025-12-28
+
+Closed the loop on “UI-derived analyzer templates”:
+- Extracted settings from `.sal`/`meta.json` into templates (including dropdown strings).
+- Added a bulk template generator for all analyzers in a saved session.
+- Added real-server validation scripts (bulk validation + parameter variations) and documented the SaveCapture→meta.json→compare feedback loop.
+- Completed mock-server coverage for analyzers so analyzer workflows are CI-friendly.
+
