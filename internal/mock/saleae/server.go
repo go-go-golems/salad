@@ -347,6 +347,31 @@ func (s *Server) ExportRawDataBinary(ctx context.Context, req *pb.ExportRawDataB
 	return out.(*pb.ExportRawDataBinaryReply), nil
 }
 
+func (s *Server) ExportDataTableCsv(ctx context.Context, req *pb.ExportDataTableCsvRequest) (*pb.ExportDataTableCsvReply, error) {
+	out, err := s.exec(ctx, MethodExportDataTableCsv, req, func(runtime *RuntimeContext) (any, error) {
+		if runtime.Plan.Behavior.ExportDataTableCsv.RequireCaptureExists {
+			if _, err := runtime.State.captureFor(req.GetCaptureId(), runtime.Plan.Defaults.StatusOnUnknownCaptureID); err != nil {
+				return nil, err
+			}
+		}
+
+		if runtime.Plan.Behavior.ExportDataTableCsv.WritePlaceholderFile {
+			err := runtime.SideEffects.ExportDataTableCSV(req.GetFilepath(), req, ExportDataTableCSVOptions{
+				IncludeRequest: runtime.Plan.Behavior.ExportDataTableCsv.IncludeRequestInFile,
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		return &pb.ExportDataTableCsvReply{}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out.(*pb.ExportDataTableCsvReply), nil
+}
+
 func (s *Server) AddAnalyzer(ctx context.Context, req *pb.AddAnalyzerRequest) (*pb.AddAnalyzerReply, error) {
 	out, err := s.exec(ctx, MethodAddAnalyzer, req, func(runtime *RuntimeContext) (any, error) {
 		captureID := req.GetCaptureId()

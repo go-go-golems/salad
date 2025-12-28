@@ -14,6 +14,7 @@ type SideEffects interface {
 	SaveCapture(filepath string, captureID uint64, payload []byte) error
 	ExportRawCSV(directory string, req *pb.ExportRawDataCsvRequest, opts ExportCSVOptions) error
 	ExportRawBinary(directory string, req *pb.ExportRawDataBinaryRequest, opts ExportBinaryOptions) error
+	ExportDataTableCSV(filepath string, req *pb.ExportDataTableCsvRequest, opts ExportDataTableCSVOptions) error
 }
 
 type ExportCSVOptions struct {
@@ -31,6 +32,10 @@ type ExportBinaryOptions struct {
 	AnalogFilename  string
 }
 
+type ExportDataTableCSVOptions struct {
+	IncludeRequest bool
+}
+
 type NoopSideEffects struct{}
 
 func (NoopSideEffects) SaveCapture(string, uint64, []byte) error {
@@ -42,6 +47,10 @@ func (NoopSideEffects) ExportRawCSV(string, *pb.ExportRawDataCsvRequest, ExportC
 }
 
 func (NoopSideEffects) ExportRawBinary(string, *pb.ExportRawDataBinaryRequest, ExportBinaryOptions) error {
+	return nil
+}
+
+func (NoopSideEffects) ExportDataTableCSV(string, *pb.ExportDataTableCsvRequest, ExportDataTableCSVOptions) error {
 	return nil
 }
 
@@ -111,6 +120,20 @@ func (FileSideEffects) ExportRawBinary(directory string, req *pb.ExportRawDataBi
 	return nil
 }
 
+func (FileSideEffects) ExportDataTableCSV(path string, req *pb.ExportDataTableCsvRequest, opts ExportDataTableCSVOptions) error {
+	if path == "" {
+		return errors.New("export filepath is required")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return errors.Wrapf(err, "create export directory for %s", path)
+	}
+	payload := buildDataTableCSVPlaceholder(req, opts.IncludeRequest)
+	if err := os.WriteFile(path, []byte(payload), 0o644); err != nil {
+		return errors.Wrapf(err, "write data table csv placeholder %s", path)
+	}
+	return nil
+}
+
 func buildCSVPlaceholder(kind string, req *pb.ExportRawDataCsvRequest, includeChannels bool) string {
 	builder := strings.Builder{}
 	builder.WriteString(fmt.Sprintf("SALAD_MOCK_%s_CSV capture_id=%d\n", strings.ToUpper(kind), req.GetCaptureId()))
@@ -126,6 +149,38 @@ func buildCSVPlaceholder(kind string, req *pb.ExportRawDataCsvRequest, includeCh
 	}
 	if len(channels.GetAnalogChannels()) > 0 {
 		builder.WriteString(fmt.Sprintf("analog=%v\n", channels.GetAnalogChannels()))
+	}
+	return builder.String()
+}
+
+func buildDataTableCSVPlaceholder(req *pb.ExportDataTableCsvRequest, includeRequest bool) string {
+	builder := strings.Builder{}
+	builder.WriteString(fmt.Sprintf("SALAD_MOCK_DATA_TABLE_CSV capture_id=%d\n", req.GetCaptureId()))
+	if !includeRequest {
+		return builder.String()
+	}
+
+	builder.WriteString(fmt.Sprintf("iso8601_timestamp=%v\n", req.GetIso8601Timestamp()))
+	if len(req.GetExportColumns()) > 0 {
+		builder.WriteString(fmt.Sprintf("export_columns=%v\n", req.GetExportColumns()))
+	}
+	if len(req.GetAnalyzers()) > 0 {
+		pairs := make([]string, 0, len(req.GetAnalyzers()))
+		for _, a := range req.GetAnalyzers() {
+			if a == nil {
+				continue
+			}
+			pairs = append(pairs, fmt.Sprintf("%d:%s", a.GetAnalyzerId(), a.GetRadixType().String()))
+		}
+		builder.WriteString(fmt.Sprintf("analyzers=%v\n", pairs))
+	}
+	if f := req.GetFilter(); f != nil {
+		if f.GetQuery() != "" {
+			builder.WriteString(fmt.Sprintf("filter.query=%s\n", f.GetQuery()))
+		}
+		if len(f.GetColumns()) > 0 {
+			builder.WriteString(fmt.Sprintf("filter.columns=%v\n", f.GetColumns()))
+		}
 	}
 	return builder.String()
 }

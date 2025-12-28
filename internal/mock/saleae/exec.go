@@ -22,6 +22,7 @@ const (
 	MethodRemoveAnalyzer      Method = "RemoveAnalyzer"
 	MethodExportRawDataCsv    Method = "ExportRawDataCsv"
 	MethodExportRawDataBinary Method = "ExportRawDataBinary"
+	MethodExportDataTableCsv  Method = "ExportDataTableCsv"
 )
 
 var AllMethods = []Method{
@@ -37,6 +38,7 @@ var AllMethods = []Method{
 	MethodRemoveAnalyzer,
 	MethodExportRawDataCsv,
 	MethodExportRawDataBinary,
+	MethodExportDataTableCsv,
 }
 
 type RuntimeContext struct {
@@ -177,6 +179,9 @@ func needsFileSideEffects(plan *Plan) bool {
 		return true
 	}
 	if plan.Behavior.ExportRawDataBinary.WriteDigitalBin || plan.Behavior.ExportRawDataBinary.WriteAnalogBin {
+		return true
+	}
+	if plan.Behavior.ExportDataTableCsv.WritePlaceholderFile {
 		return true
 	}
 	return false

@@ -241,6 +241,51 @@ func (c *Client) ExportRawDataBinary(
 	return errors.Wrap(err, "ExportRawDataBinary RPC")
 }
 
+func (c *Client) ExportDataTableCsv(
+	ctx context.Context,
+	captureID uint64,
+	filepath string,
+	analyzers []*pb.DataTableAnalyzerConfiguration,
+	iso8601Timestamp bool,
+	exportColumns []string,
+	filter *pb.DataTableFilter,
+) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if captureID == 0 {
+		return errors.New("ExportDataTableCsv: capture-id must be non-zero")
+	}
+	if filepath == "" {
+		return errors.New("ExportDataTableCsv: filepath is required")
+	}
+	if len(analyzers) == 0 {
+		return errors.New("ExportDataTableCsv: at least one analyzer is required")
+	}
+	for i, a := range analyzers {
+		if a == nil {
+			return errors.Errorf("ExportDataTableCsv: analyzers[%d] is nil", i)
+		}
+		if a.GetAnalyzerId() == 0 {
+			return errors.Errorf("ExportDataTableCsv: analyzers[%d].analyzer_id must be non-zero", i)
+		}
+		if a.GetRadixType() == pb.RadixType_RADIX_TYPE_UNSPECIFIED {
+			return errors.Errorf("ExportDataTableCsv: analyzers[%d].radix_type must be specified", i)
+		}
+	}
+
+	req := &pb.ExportDataTableCsvRequest{
+		CaptureId:        captureID,
+		Filepath:         filepath,
+		Analyzers:        analyzers,
+		Iso8601Timestamp: iso8601Timestamp,
+		ExportColumns:    exportColumns,
+		Filter:           filter,
+	}
+	_, err := c.manager.ExportDataTableCsv(ctx, req)
+	return errors.Wrap(err, "ExportDataTableCsv RPC")
+}
+
 func (c *Client) AddAnalyzer(
 	ctx context.Context,
 	captureID uint64,

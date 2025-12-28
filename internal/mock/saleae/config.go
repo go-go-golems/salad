@@ -87,6 +87,7 @@ type BehaviorConfig struct {
 	RemoveAnalyzer      RemoveAnalyzerBehaviorConfig      `yaml:"RemoveAnalyzer,omitempty"`
 	ExportRawDataCsv    ExportRawDataCsvBehaviorConfig    `yaml:"ExportRawDataCsv,omitempty"`
 	ExportRawDataBinary ExportRawDataBinaryBehaviorConfig `yaml:"ExportRawDataBinary,omitempty"`
+	ExportDataTableCsv  ExportDataTableCsvBehaviorConfig  `yaml:"ExportDataTableCsv,omitempty"`
 }
 
 type GetDevicesBehaviorConfig struct {
@@ -199,8 +200,18 @@ type ExportRawDataBinaryBehaviorConfig struct {
 	SideEffect ExportRawBinarySideEffect `yaml:"side_effect,omitempty"`
 }
 
+type ExportDataTableCsvBehaviorConfig struct {
+	Validate   ExportValidateConfig         `yaml:"validate,omitempty"`
+	SideEffect ExportDataTableCsvSideEffect `yaml:"side_effect,omitempty"`
+}
+
 type ExportValidateConfig struct {
 	RequireCaptureExists *bool `yaml:"require_capture_exists,omitempty"`
+}
+
+type ExportDataTableCsvSideEffect struct {
+	WritePlaceholderFile *bool `yaml:"write_placeholder_file,omitempty"`
+	IncludeRequestInFile *bool `yaml:"include_request_in_file,omitempty"`
 }
 
 type ExportRawCsvSideEffect struct {

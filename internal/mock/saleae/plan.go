@@ -55,6 +55,7 @@ type BehaviorPlan struct {
 	RemoveAnalyzer      RemoveAnalyzerPlan
 	ExportRawDataCsv    ExportRawDataCsvPlan
 	ExportRawDataBinary ExportRawDataBinaryPlan
+	ExportDataTableCsv  ExportDataTableCsvPlan
 }
 
 type GetDevicesPlan struct {
@@ -111,6 +112,12 @@ type ExportRawDataBinaryPlan struct {
 	WriteAnalogBin       bool
 	DigitalFilename      string
 	AnalogFilename       string
+}
+
+type ExportDataTableCsvPlan struct {
+	RequireCaptureExists bool
+	WritePlaceholderFile bool
+	IncludeRequestInFile bool
 }
 
 type AddAnalyzerPlan struct {
@@ -354,6 +361,11 @@ func compileBehavior(cfg Config, defaults DefaultsPlan) (BehaviorPlan, error) {
 			RequireCaptureExists: pickBool(cfg.Behavior.ExportRawDataBinary.Validate.RequireCaptureExists, true),
 			DigitalFilename:      "digital.bin",
 			AnalogFilename:       "analog.bin",
+		},
+		ExportDataTableCsv: ExportDataTableCsvPlan{
+			RequireCaptureExists: pickBool(cfg.Behavior.ExportDataTableCsv.Validate.RequireCaptureExists, true),
+			WritePlaceholderFile: pickBool(cfg.Behavior.ExportDataTableCsv.SideEffect.WritePlaceholderFile, false),
+			IncludeRequestInFile: pickBool(cfg.Behavior.ExportDataTableCsv.SideEffect.IncludeRequestInFile, false),
 		},
 	}
 
@@ -633,6 +645,32 @@ func compileFaultMatcher(method Method, match *FaultMatchConfig) (func(any) bool
 				return false
 			}
 			return reqTyped.GetCaptureId() == want
+		}, nil
+	case MethodExportDataTableCsv:
+		// Support matching by capture_id and/or filepath
+		var wantCaptureID *uint64
+		if match.CaptureID != nil {
+			wantCaptureID = match.CaptureID
+		}
+		var wantFilepath *string
+		if match.Filepath != nil {
+			wantFilepath = match.Filepath
+		}
+		if wantCaptureID == nil && wantFilepath == nil {
+			return nil, nil
+		}
+		return func(req any) bool {
+			reqTyped, ok := req.(*pb.ExportDataTableCsvRequest)
+			if !ok {
+				return false
+			}
+			if wantCaptureID != nil && reqTyped.GetCaptureId() != *wantCaptureID {
+				return false
+			}
+			if wantFilepath != nil && reqTyped.GetFilepath() != *wantFilepath {
+				return false
+			}
+			return true
 		}, nil
 	default:
 		return nil, errors.Errorf("fault matchers not supported for method %s", method)
