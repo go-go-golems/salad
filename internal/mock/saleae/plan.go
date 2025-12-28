@@ -44,20 +44,20 @@ type CapturePlan struct {
 }
 
 type BehaviorPlan struct {
-	GetDevices          GetDevicesPlan
-	StartCapture        StartCapturePlan
-	LoadCapture         LoadCapturePlan
-	SaveCapture         SaveCapturePlan
-	StopCapture         StopCapturePlan
-	WaitCapture         WaitCapturePlan
-	CloseCapture        CloseCapturePlan
-	AddAnalyzer         AddAnalyzerPlan
-	RemoveAnalyzer      RemoveAnalyzerPlan
+	GetDevices              GetDevicesPlan
+	StartCapture            StartCapturePlan
+	LoadCapture             LoadCapturePlan
+	SaveCapture             SaveCapturePlan
+	StopCapture             StopCapturePlan
+	WaitCapture             WaitCapturePlan
+	CloseCapture            CloseCapturePlan
+	AddAnalyzer             AddAnalyzerPlan
+	RemoveAnalyzer          RemoveAnalyzerPlan
 	AddHighLevelAnalyzer    AddHighLevelAnalyzerPlan
 	RemoveHighLevelAnalyzer RemoveHighLevelAnalyzerPlan
-	ExportRawDataCsv    ExportRawDataCsvPlan
-	ExportRawDataBinary ExportRawDataBinaryPlan
-	ExportDataTableCsv  ExportDataTableCsvPlan
+	ExportRawDataCsv        ExportRawDataCsvPlan
+	ExportRawDataBinary     ExportRawDataBinaryPlan
+	ExportDataTableCsv      ExportDataTableCsvPlan
 }
 
 type GetDevicesPlan struct {

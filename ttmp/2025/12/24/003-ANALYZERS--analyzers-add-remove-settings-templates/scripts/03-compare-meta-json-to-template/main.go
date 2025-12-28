@@ -10,20 +10,22 @@
 // YAML/JSON template file that `salad analyzer add --settings-*` would consume.
 //
 // Primary use: regression/verification loop
-//   template -> AddAnalyzer -> SaveCapture -> extract meta.json -> compare(meta.json, template)
+//
+//	template -> AddAnalyzer -> SaveCapture -> extract meta.json -> compare(meta.json, template)
 //
 // Usage
 // -----
-//   go run ./ttmp/.../scripts/03-compare-meta-json-to-template/main.go \
-//     --meta /tmp/meta.json \
-//     --node-id 10038 \
-//     --template /abs/path/to/configs/analyzers/spi-from-session6.yaml
+//
+//	go run ./ttmp/.../scripts/03-compare-meta-json-to-template/main.go \
+//	  --meta /tmp/meta.json \
+//	  --node-id 10038 \
+//	  --template /abs/path/to/configs/analyzers/spi-from-session6.yaml
 //
 // Notes
 // -----
-// - Dropdown values in meta.json include both numeric codes and dropdownText strings; we compare using
-//   dropdownText strings (matches Saleae automation docs and our template style).
-// - meta.json contains non-gRPC fields (showInDataTable/streamToTerminal); those are ignored.
+//   - Dropdown values in meta.json include both numeric codes and dropdownText strings; we compare using
+//     dropdownText strings (matches Saleae automation docs and our template style).
+//   - meta.json contains non-gRPC fields (showInDataTable/streamToTerminal); those are ignored.
 package main
 
 import (
@@ -59,8 +61,8 @@ type MetaSettingRow struct {
 }
 
 type MetaSettingSpec struct {
-	Type    string             `json:"type"`
-	Value   any                `json:"value"`
+	Type    string              `json:"type"`
+	Value   any                 `json:"value"`
 	Options []MetaSettingOption `json:"options"`
 }
 
@@ -302,5 +304,3 @@ func valuesEqual(a, b any) bool {
 	}
 	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
 }
-
-

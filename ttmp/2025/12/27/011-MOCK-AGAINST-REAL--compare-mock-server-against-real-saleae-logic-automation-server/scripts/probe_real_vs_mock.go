@@ -37,16 +37,16 @@ type RPCErrorSummary struct {
 }
 
 type EndpointReport struct {
-	Name       string          `json:"name"`
-	Addr       string          `json:"addr"`
-	AppInfo    *AppInfoSummary `json:"appinfo,omitempty"`
-	DevicesNo  []DeviceSummary `json:"devices_no_sim,omitempty"`
+	Name      string           `json:"name"`
+	Addr      string           `json:"addr"`
+	AppInfo   *AppInfoSummary  `json:"appinfo,omitempty"`
+	DevicesNo []DeviceSummary  `json:"devices_no_sim,omitempty"`
 	DevicesYes []DeviceSummary `json:"devices_with_sim,omitempty"`
 
-	WaitCaptureUnknown     *RPCErrorSummary `json:"wait_capture_unknown,omitempty"`
-	StopCaptureUnknown     *RPCErrorSummary `json:"stop_capture_unknown,omitempty"`
-	CloseCaptureUnknown    *RPCErrorSummary `json:"close_capture_unknown,omitempty"`
-	LoadCaptureEmptyPath   *RPCErrorSummary `json:"load_capture_empty_path,omitempty"`
+	WaitCaptureUnknown *RPCErrorSummary `json:"wait_capture_unknown,omitempty"`
+	StopCaptureUnknown *RPCErrorSummary `json:"stop_capture_unknown,omitempty"`
+	CloseCaptureUnknown *RPCErrorSummary `json:"close_capture_unknown,omitempty"`
+	LoadCaptureEmptyPath *RPCErrorSummary `json:"load_capture_empty_path,omitempty"`
 	LoadCaptureMissingPath *RPCErrorSummary `json:"load_capture_missing_path,omitempty"`
 }
 
@@ -66,11 +66,11 @@ func main() {
 
 		outPath = flag.String("out", "", "Optional remember-to-diff output file path")
 
-		ignoreLaunchPID  = flag.Bool("ignore-launch-pid", true, "Ignore appinfo.launch_pid differences when diffing")
+		ignoreLaunchPID = flag.Bool("ignore-launch-pid", true, "Ignore appinfo.launch_pid differences when diffing")
 		ignoreAppVersion = flag.Bool("ignore-app-version", true, "Ignore appinfo.application_version differences when diffing")
-		diffDevices      = flag.Bool("diff-devices", false, "Diff device lists (often expected to differ real vs mock)")
-		diffMessages     = flag.Bool("diff-messages", false, "Diff gRPC error messages (codes are always compared)")
-		failOnDiff       = flag.Bool("fail-on-diff", false, "Exit non-zero if any diffs are found")
+		diffDevices = flag.Bool("diff-devices", false, "Diff device lists (often expected to differ real vs mock)")
+		diffMessages = flag.Bool("diff-messages", false, "Diff gRPC error messages (codes are always compared)")
+		failOnDiff = flag.Bool("fail-on-diff", false, "Exit non-zero if any diffs are found")
 
 		missingFilepath = flag.String("missing-filepath", "/this/does/not/exist.sal", "Path used for LoadCapture missing-file probe (should not exist)")
 	)
@@ -346,3 +346,5 @@ func equalDevices(a, b []DeviceSummary) bool {
 	}
 	return true
 }
+
+

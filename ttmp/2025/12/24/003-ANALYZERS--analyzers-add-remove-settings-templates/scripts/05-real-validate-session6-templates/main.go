@@ -13,16 +13,17 @@
 //
 // Usage
 // -----
-//   go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/05-real-validate-session6-templates/main.go \
-//     --host 127.0.0.1 --port 10430 --timeout 12s \
-//     --templates-dir /home/manuel/workspaces/2025-12-27/salad-pass/salad/configs/analyzers \
-//     --prefix session6-
+//
+//	go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/05-real-validate-session6-templates/main.go \
+//	  --host 127.0.0.1 --port 10430 --timeout 12s \
+//	  --templates-dir /home/manuel/workspaces/2025-12-27/salad-pass/salad/configs/analyzers \
+//	  --prefix session6-
 //
 // Notes
 // -----
-// - Analyzer "name" must match UI name exactly (e.g. "Async Serial", "DMX-512", "1-Wire").
-//   The bulk template generator writes this in a header line: `# Analyzer: ... type='X' ...`.
-// - This script reads that header to select the analyzer name; it does not guess from filename.
+//   - Analyzer "name" must match UI name exactly (e.g. "Async Serial", "DMX-512", "1-Wire").
+//     The bulk template generator writes this in a header line: `# Analyzer: ... type='X' ...`.
+//   - This script reads that header to select the analyzer name; it does not guess from filename.
 package main
 
 import (
@@ -342,5 +343,3 @@ func parseUint32CSV(s string) ([]uint32, error) {
 	}
 	return out, nil
 }
-
-

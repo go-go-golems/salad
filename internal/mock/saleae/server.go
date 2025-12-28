@@ -507,7 +507,7 @@ func (s *Server) AddHighLevelAnalyzer(ctx context.Context, req *pb.AddHighLevelA
 		}
 
 		runtime.State.HighLevelAnalyzers[captureID][analyzerID] = &HighLevelAnalyzerState{
-			ID:             analyzerID,
+			ID:              analyzerID,
 			CaptureID:       captureID,
 			ExtensionDir:    req.GetExtensionDirectory(),
 			HLAName:         req.GetHlaName(),

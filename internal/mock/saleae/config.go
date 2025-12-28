@@ -76,20 +76,20 @@ type CaptureModeConfig struct {
 }
 
 type BehaviorConfig struct {
-	GetDevices          GetDevicesBehaviorConfig          `yaml:"GetDevices,omitempty"`
-	StartCapture        StartCaptureBehaviorConfig        `yaml:"StartCapture,omitempty"`
-	LoadCapture         LoadCaptureBehaviorConfig         `yaml:"LoadCapture,omitempty"`
-	SaveCapture         SaveCaptureBehaviorConfig         `yaml:"SaveCapture,omitempty"`
-	StopCapture         StopCaptureBehaviorConfig         `yaml:"StopCapture,omitempty"`
-	WaitCapture         WaitCaptureBehaviorConfig         `yaml:"WaitCapture,omitempty"`
-	CloseCapture        CloseCaptureBehaviorConfig        `yaml:"CloseCapture,omitempty"`
-	AddAnalyzer         AddAnalyzerBehaviorConfig         `yaml:"AddAnalyzer,omitempty"`
-	RemoveAnalyzer      RemoveAnalyzerBehaviorConfig      `yaml:"RemoveAnalyzer,omitempty"`
+	GetDevices              GetDevicesBehaviorConfig              `yaml:"GetDevices,omitempty"`
+	StartCapture            StartCaptureBehaviorConfig            `yaml:"StartCapture,omitempty"`
+	LoadCapture             LoadCaptureBehaviorConfig             `yaml:"LoadCapture,omitempty"`
+	SaveCapture             SaveCaptureBehaviorConfig             `yaml:"SaveCapture,omitempty"`
+	StopCapture             StopCaptureBehaviorConfig             `yaml:"StopCapture,omitempty"`
+	WaitCapture             WaitCaptureBehaviorConfig             `yaml:"WaitCapture,omitempty"`
+	CloseCapture            CloseCaptureBehaviorConfig            `yaml:"CloseCapture,omitempty"`
+	AddAnalyzer             AddAnalyzerBehaviorConfig             `yaml:"AddAnalyzer,omitempty"`
+	RemoveAnalyzer          RemoveAnalyzerBehaviorConfig          `yaml:"RemoveAnalyzer,omitempty"`
 	AddHighLevelAnalyzer    AddHighLevelAnalyzerBehaviorConfig    `yaml:"AddHighLevelAnalyzer,omitempty"`
 	RemoveHighLevelAnalyzer RemoveHighLevelAnalyzerBehaviorConfig `yaml:"RemoveHighLevelAnalyzer,omitempty"`
-	ExportRawDataCsv    ExportRawDataCsvBehaviorConfig    `yaml:"ExportRawDataCsv,omitempty"`
-	ExportRawDataBinary ExportRawDataBinaryBehaviorConfig `yaml:"ExportRawDataBinary,omitempty"`
-	ExportDataTableCsv  ExportDataTableCsvBehaviorConfig  `yaml:"ExportDataTableCsv,omitempty"`
+	ExportRawDataCsv        ExportRawDataCsvBehaviorConfig        `yaml:"ExportRawDataCsv,omitempty"`
+	ExportRawDataBinary     ExportRawDataBinaryBehaviorConfig     `yaml:"ExportRawDataBinary,omitempty"`
+	ExportDataTableCsv      ExportDataTableCsvBehaviorConfig      `yaml:"ExportDataTableCsv,omitempty"`
 }
 
 type GetDevicesBehaviorConfig struct {

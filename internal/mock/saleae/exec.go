@@ -10,21 +10,21 @@ import (
 type Method string
 
 const (
-	MethodGetAppInfo          Method = "GetAppInfo"
-	MethodGetDevices          Method = "GetDevices"
-	MethodStartCapture        Method = "StartCapture"
-	MethodLoadCapture         Method = "LoadCapture"
-	MethodSaveCapture         Method = "SaveCapture"
-	MethodStopCapture         Method = "StopCapture"
-	MethodWaitCapture         Method = "WaitCapture"
-	MethodCloseCapture        Method = "CloseCapture"
-	MethodAddAnalyzer         Method = "AddAnalyzer"
-	MethodRemoveAnalyzer      Method = "RemoveAnalyzer"
+	MethodGetAppInfo              Method = "GetAppInfo"
+	MethodGetDevices              Method = "GetDevices"
+	MethodStartCapture            Method = "StartCapture"
+	MethodLoadCapture             Method = "LoadCapture"
+	MethodSaveCapture             Method = "SaveCapture"
+	MethodStopCapture             Method = "StopCapture"
+	MethodWaitCapture             Method = "WaitCapture"
+	MethodCloseCapture            Method = "CloseCapture"
+	MethodAddAnalyzer             Method = "AddAnalyzer"
+	MethodRemoveAnalyzer          Method = "RemoveAnalyzer"
 	MethodAddHighLevelAnalyzer    Method = "AddHighLevelAnalyzer"
 	MethodRemoveHighLevelAnalyzer Method = "RemoveHighLevelAnalyzer"
-	MethodExportRawDataCsv    Method = "ExportRawDataCsv"
-	MethodExportRawDataBinary Method = "ExportRawDataBinary"
-	MethodExportDataTableCsv  Method = "ExportDataTableCsv"
+	MethodExportRawDataCsv        Method = "ExportRawDataCsv"
+	MethodExportRawDataBinary     Method = "ExportRawDataBinary"
+	MethodExportDataTableCsv      Method = "ExportDataTableCsv"
 )
 
 var AllMethods = []Method{
@@ -142,13 +142,13 @@ func (s *Server) maybeFault(method Method, req any, callN int) error {
 
 func newState(plan *Plan, clock Clock) State {
 	state := State{
-		AppInfo:        plan.Fixtures.AppInfo,
-		Devices:        append([]*pb.Device{}, plan.Fixtures.Devices...),
-		Captures:       make(map[uint64]*CaptureState),
-		Analyzers:      make(map[uint64]map[uint64]*AnalyzerState),
+		AppInfo:            plan.Fixtures.AppInfo,
+		Devices:            append([]*pb.Device{}, plan.Fixtures.Devices...),
+		Captures:           make(map[uint64]*CaptureState),
+		Analyzers:          make(map[uint64]map[uint64]*AnalyzerState),
 		HighLevelAnalyzers: make(map[uint64]map[uint64]*HighLevelAnalyzerState),
-		NextCaptureID:  plan.Defaults.CaptureIDStart,
-		NextAnalyzerID: plan.Defaults.AnalyzerIDStart,
+		NextCaptureID:      plan.Defaults.CaptureIDStart,
+		NextAnalyzerID:     plan.Defaults.AnalyzerIDStart,
 	}
 
 	var maxCaptureID uint64

@@ -69,21 +69,21 @@ type AnalyzerState struct {
 
 type HighLevelAnalyzerState struct {
 	ID              uint64
-	CaptureID        uint64
-	ExtensionDir     string
-	HLAName          string
-	Label            string
-	InputAnalyzerID  uint64
-	Settings         map[string]*pb.HighLevelAnalyzerSettingValue
-	CreatedAt        time.Time
+	CaptureID       uint64
+	ExtensionDir    string
+	HLAName         string
+	Label           string
+	InputAnalyzerID uint64
+	Settings        map[string]*pb.HighLevelAnalyzerSettingValue
+	CreatedAt       time.Time
 }
 
 type State struct {
-	AppInfo        *pb.AppInfo
-	Devices        []*pb.Device
-	Captures       map[uint64]*CaptureState
-	Analyzers      map[uint64]map[uint64]*AnalyzerState // capture_id -> analyzer_id -> state
+	AppInfo            *pb.AppInfo
+	Devices            []*pb.Device
+	Captures           map[uint64]*CaptureState
+	Analyzers          map[uint64]map[uint64]*AnalyzerState          // capture_id -> analyzer_id -> state
 	HighLevelAnalyzers map[uint64]map[uint64]*HighLevelAnalyzerState // capture_id -> analyzer_id -> state
-	NextCaptureID  uint64
-	NextAnalyzerID uint64
+	NextCaptureID      uint64
+	NextAnalyzerID     uint64
 }

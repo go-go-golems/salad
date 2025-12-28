@@ -6,18 +6,19 @@
 // changing settings programmatically). This script validates that setting variations are accepted by the
 // server AND persist into the saved `.sal` → `meta.json`, which gives us a feedback loop:
 //
-//   expected settings -> AddAnalyzer -> SaveCapture(.sal) -> extract meta.json -> compare(meta, expected)
+//	expected settings -> AddAnalyzer -> SaveCapture(.sal) -> extract meta.json -> compare(meta, expected)
 //
 // We intentionally source dropdown option strings from an existing `.sal` (meta.json options list),
 // so we don't have to guess the exact UI-visible strings.
 //
 // Usage
 // -----
-//   go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/06-real-validate-template-variations/main.go \
-//     --host 127.0.0.1 --port 10430 --timeout 25s \
-//     --source-sal "/tmp/Session 6.sal" \
-//     --templates-dir "/home/manuel/workspaces/2025-12-27/salad-pass/salad/configs/analyzers" \
-//     --out-sal "/tmp/session-validate-variations.sal"
+//
+//	go run ./ttmp/2025/12/24/003-ANALYZERS--analyzers-add-remove-settings-templates/scripts/06-real-validate-template-variations/main.go \
+//	  --host 127.0.0.1 --port 10430 --timeout 25s \
+//	  --source-sal "/tmp/Session 6.sal" \
+//	  --templates-dir "/home/manuel/workspaces/2025-12-27/salad-pass/salad/configs/analyzers" \
+//	  --out-sal "/tmp/session-validate-variations.sal"
 package main
 
 import (
@@ -46,7 +47,7 @@ import (
 
 type Meta struct {
 	Data struct {
-		Name     string         `json:"name"`
+		Name      string         `json:"name"`
 		Analyzers []MetaAnalyzer `json:"analyzers"`
 	} `json:"data"`
 }
@@ -64,8 +65,8 @@ type MetaSettingRow struct {
 }
 
 type MetaSettingSpec struct {
-	Type    string             `json:"type"`
-	Value   any                `json:"value"`
+	Type    string              `json:"type"`
+	Value   any                 `json:"value"`
 	Options []MetaSettingOption `json:"options"`
 }
 
@@ -84,16 +85,16 @@ type Created struct {
 
 func main() {
 	var (
-		host        = flag.String("host", "127.0.0.1", "Logic 2 automation host")
-		port        = flag.Int("port", 10430, "Logic 2 automation port")
-		timeout     = flag.Duration("timeout", 25*time.Second, "Dial/RPC timeout")
-		sourceSAL   = flag.String("source-sal", "/tmp/Session 6.sal", "Source .sal used to learn dropdown option strings (meta.json options)")
+		host         = flag.String("host", "127.0.0.1", "Logic 2 automation host")
+		port         = flag.Int("port", 10430, "Logic 2 automation port")
+		timeout      = flag.Duration("timeout", 25*time.Second, "Dial/RPC timeout")
+		sourceSAL    = flag.String("source-sal", "/tmp/Session 6.sal", "Source .sal used to learn dropdown option strings (meta.json options)")
 		templatesDir = flag.String("templates-dir", "", "Directory containing generated session templates (e.g. configs/analyzers)")
-		outSAL      = flag.String("out-sal", "/tmp/session-validate-variations.sal", "Where to save the validation .sal (on Logic host filesystem)")
-		prefix      = flag.String("prefix", "session6-", "Template filename prefix to use for base templates")
-		digital     = flag.String("digital", "0,1,2,3,4,5,6,7", "Digital channels to enable (comma-separated)")
-		digitalHz   = flag.Uint64("digital-hz", 1_000_000, "Digital sample rate (Hz)")
-		bufferMB    = flag.Uint64("buffer-mb", 16, "Capture buffer size (MB)")
+		outSAL       = flag.String("out-sal", "/tmp/session-validate-variations.sal", "Where to save the validation .sal (on Logic host filesystem)")
+		prefix       = flag.String("prefix", "session6-", "Template filename prefix to use for base templates")
+		digital      = flag.String("digital", "0,1,2,3,4,5,6,7", "Digital channels to enable (comma-separated)")
+		digitalHz    = flag.Uint64("digital-hz", 1_000_000, "Digital sample rate (Hz)")
+		bufferMB     = flag.Uint64("buffer-mb", 16, "Capture buffer size (MB)")
 	)
 	flag.Parse()
 
@@ -171,10 +172,10 @@ func main() {
 	cancel()
 
 	type Variation struct {
-		Name        string
-		Analyzer    string
+		Name         string
+		Analyzer     string
 		BaseTemplate string
-		Apply       func(expected map[string]*pb.AnalyzerSettingValue) (map[string]*pb.AnalyzerSettingValue, error)
+		Apply        func(expected map[string]*pb.AnalyzerSettingValue) (map[string]*pb.AnalyzerSettingValue, error)
 	}
 
 	variations := []Variation{
@@ -775,5 +776,3 @@ func valuesEqual(a any, b any) bool {
 	}
 	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
 }
-
-

@@ -18,8 +18,8 @@ func TestMockServer_AddRemoveHighLevelAnalyzer(t *testing.T) {
 		Scenario: "hla-happy-path",
 		Defaults: DefaultsConfig{
 			IDs: IDsDefaultsConfig{
-				Deterministic: ptrBool(true),
-				CaptureIDStart: 1,
+				Deterministic:   ptrBool(true),
+				CaptureIDStart:  1,
 				AnalyzerIDStart: 10000,
 			},
 		},
@@ -65,8 +65,8 @@ func TestMockServer_AddRemoveHighLevelAnalyzer(t *testing.T) {
 
 	// Add a base analyzer, which the HLA will use as input.
 	addReply, err := manager.AddAnalyzer(ctx, &pb.AddAnalyzerRequest{
-		CaptureId:    captureID,
-		AnalyzerName: "SPI",
+		CaptureId:     captureID,
+		AnalyzerName:  "SPI",
 		AnalyzerLabel: "base",
 		Settings: map[string]*pb.AnalyzerSettingValue{
 			"Clock": {Value: &pb.AnalyzerSettingValue_Int64Value{Int64Value: 0}},
@@ -82,12 +82,12 @@ func TestMockServer_AddRemoveHighLevelAnalyzer(t *testing.T) {
 
 	// Add HLA.
 	hlaReply, err := manager.AddHighLevelAnalyzer(ctx, &pb.AddHighLevelAnalyzerRequest{
-		CaptureId:           captureID,
-		ExtensionDirectory:  "/tmp/ext",
-		HlaName:             "my_hla",
-		HlaLabel:            "hla",
-		InputAnalyzerId:     inputAnalyzerID,
-		Settings:            map[string]*pb.HighLevelAnalyzerSettingValue{"foo": {Value: &pb.HighLevelAnalyzerSettingValue_StringValue{StringValue: "bar"}}},
+		CaptureId:          captureID,
+		ExtensionDirectory: "/tmp/ext",
+		HlaName:            "my_hla",
+		HlaLabel:           "hla",
+		InputAnalyzerId:    inputAnalyzerID,
+		Settings:           map[string]*pb.HighLevelAnalyzerSettingValue{"foo": {Value: &pb.HighLevelAnalyzerSettingValue_StringValue{StringValue: "bar"}}},
 	})
 	if err != nil {
 		t.Fatalf("AddHighLevelAnalyzer: %v", err)
@@ -179,5 +179,3 @@ func TestMockServer_AddHighLevelAnalyzer_RequiresInputAnalyzerExists(t *testing.
 		t.Fatalf("expected InvalidArgument, got %s (%s)", st.Code(), st.Message())
 	}
 }
-
-
