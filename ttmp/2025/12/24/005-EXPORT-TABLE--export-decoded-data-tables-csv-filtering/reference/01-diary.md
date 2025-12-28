@@ -190,4 +190,24 @@ To unblock “compile + commit” for 005, I reorganized those scripts so each l
 ### What warrants a second pair of eyes
 - Confirm the new “script directory per tool” layout is the preferred pattern for future `.go` scripts in `ttmp/.../scripts/`.
 
+## Step 6: Add ticket-local scripts for real-server testing
+
+This step adds a runnable script under the ticket’s `scripts/` directory so that real-server validation is easy to repeat and easy to tweak when something fails (paths, timeouts, analyzer settings, etc.). This is intentionally stored in the ticket workspace so it doesn’t get lost in ad-hoc shell history.
+
+### What I did
+- Added:
+  - `ttmp/2025/12/24/005-EXPORT-TABLE--export-decoded-data-tables-csv-filtering/scripts/01-real-export-table.sh`
+  - `ttmp/2025/12/24/005-EXPORT-TABLE--export-decoded-data-tables-csv-filtering/scripts/README.md`
+
+### Why
+- Make it trivial to re-run the “load → add analyzer → export table → verify CSV” flow against a real Logic 2 server.
+- Keep the command sequence editable and versioned with the ticket.
+
+### How to run
+- From `salad/` repo root:
+  - `SAL="/tmp/Session 6.sal" ./ttmp/2025/12/24/005-EXPORT-TABLE--export-decoded-data-tables-csv-filtering/scripts/01-real-export-table.sh`
+
+### What warrants a second pair of eyes
+- Confirm the default `SETTINGS_YAML` path in the script is acceptable (it is overrideable via env var).
+
 
