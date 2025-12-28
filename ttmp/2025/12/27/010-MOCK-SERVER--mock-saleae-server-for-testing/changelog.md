@@ -136,3 +136,10 @@ Added analyzer RPC support + tests:
 - Implemented `AddAnalyzer` / `RemoveAnalyzer` in the mock server (commit df30f497)
 - Added CLI-vs-mock integration test for analyzers (commit ab14a1c7)
 
+## 2025-12-28
+
+Extended mock analyzer functionality to support High Level Analyzers (HLA):
+- Implemented `AddHighLevelAnalyzer` / `RemoveHighLevelAnalyzer` with in-memory state tracking
+- Added CloseCapture cleanup for analyzer state
+- Added tests for HLA add/remove and input analyzer existence validation
+

@@ -53,6 +53,8 @@ type BehaviorPlan struct {
 	CloseCapture        CloseCapturePlan
 	AddAnalyzer         AddAnalyzerPlan
 	RemoveAnalyzer      RemoveAnalyzerPlan
+	AddHighLevelAnalyzer    AddHighLevelAnalyzerPlan
+	RemoveHighLevelAnalyzer RemoveHighLevelAnalyzerPlan
 	ExportRawDataCsv    ExportRawDataCsvPlan
 	ExportRawDataBinary ExportRawDataBinaryPlan
 	ExportDataTableCsv  ExportDataTableCsvPlan
@@ -126,6 +128,19 @@ type AddAnalyzerPlan struct {
 }
 
 type RemoveAnalyzerPlan struct {
+	RequireCaptureExists  bool
+	RequireAnalyzerExists bool
+}
+
+type AddHighLevelAnalyzerPlan struct {
+	RequireCaptureExists          bool
+	RequireExtensionDirNonEmpty   bool
+	RequireHLANameNonEmpty        bool
+	RequireInputAnalyzerIDNonZero bool
+	RequireInputAnalyzerExists    bool
+}
+
+type RemoveHighLevelAnalyzerPlan struct {
 	RequireCaptureExists  bool
 	RequireAnalyzerExists bool
 }
@@ -351,6 +366,17 @@ func compileBehavior(cfg Config, defaults DefaultsPlan) (BehaviorPlan, error) {
 			RequireCaptureExists:  pickBool(cfg.Behavior.RemoveAnalyzer.Validate.RequireCaptureExists, true),
 			RequireAnalyzerExists: pickBool(cfg.Behavior.RemoveAnalyzer.Validate.RequireAnalyzerExists, true),
 		},
+		AddHighLevelAnalyzer: AddHighLevelAnalyzerPlan{
+			RequireCaptureExists:          pickBool(cfg.Behavior.AddHighLevelAnalyzer.Validate.RequireCaptureExists, true),
+			RequireExtensionDirNonEmpty:   pickBool(cfg.Behavior.AddHighLevelAnalyzer.Validate.RequireExtensionDirNonEmpty, true),
+			RequireHLANameNonEmpty:        pickBool(cfg.Behavior.AddHighLevelAnalyzer.Validate.RequireHLANameNonEmpty, true),
+			RequireInputAnalyzerIDNonZero: pickBool(cfg.Behavior.AddHighLevelAnalyzer.Validate.RequireInputAnalyzerIDNonZero, true),
+			RequireInputAnalyzerExists:    pickBool(cfg.Behavior.AddHighLevelAnalyzer.Validate.RequireInputAnalyzerExists, true),
+		},
+		RemoveHighLevelAnalyzer: RemoveHighLevelAnalyzerPlan{
+			RequireCaptureExists:  pickBool(cfg.Behavior.RemoveHighLevelAnalyzer.Validate.RequireCaptureExists, true),
+			RequireAnalyzerExists: pickBool(cfg.Behavior.RemoveHighLevelAnalyzer.Validate.RequireAnalyzerExists, true),
+		},
 		ExportRawDataCsv: ExportRawDataCsvPlan{
 			RequireCaptureExists:           pickBool(cfg.Behavior.ExportRawDataCsv.Validate.RequireCaptureExists, true),
 			DigitalFilename:                "digital.csv",
@@ -551,6 +577,52 @@ func compileFaultMatcher(method Method, match *FaultMatchConfig) (func(any) bool
 		}
 		return func(req any) bool {
 			reqTyped, ok := req.(*pb.RemoveAnalyzerRequest)
+			if !ok {
+				return false
+			}
+			if wantCaptureID != nil && reqTyped.GetCaptureId() != *wantCaptureID {
+				return false
+			}
+			if wantAnalyzerID != nil && reqTyped.GetAnalyzerId() != *wantAnalyzerID {
+				return false
+			}
+			return true
+		}, nil
+	case MethodAddHighLevelAnalyzer:
+		// Support matching by capture_id and/or analyzer_name (HLA name)
+		var wantCaptureID *uint64
+		if match.CaptureID != nil {
+			wantCaptureID = match.CaptureID
+		}
+		var wantName *string
+		if match.AnalyzerName != nil {
+			wantName = match.AnalyzerName
+		}
+		return func(req any) bool {
+			reqTyped, ok := req.(*pb.AddHighLevelAnalyzerRequest)
+			if !ok {
+				return false
+			}
+			if wantCaptureID != nil && reqTyped.GetCaptureId() != *wantCaptureID {
+				return false
+			}
+			if wantName != nil && reqTyped.GetHlaName() != *wantName {
+				return false
+			}
+			return true
+		}, nil
+	case MethodRemoveHighLevelAnalyzer:
+		// Support matching by capture_id and/or analyzer_id
+		var wantCaptureID *uint64
+		if match.CaptureID != nil {
+			wantCaptureID = match.CaptureID
+		}
+		var wantAnalyzerID *uint64
+		if match.AnalyzerID != nil {
+			wantAnalyzerID = match.AnalyzerID
+		}
+		return func(req any) bool {
+			reqTyped, ok := req.(*pb.RemoveHighLevelAnalyzerRequest)
 			if !ok {
 				return false
 			}

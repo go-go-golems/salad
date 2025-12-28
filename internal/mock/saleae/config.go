@@ -85,6 +85,8 @@ type BehaviorConfig struct {
 	CloseCapture        CloseCaptureBehaviorConfig        `yaml:"CloseCapture,omitempty"`
 	AddAnalyzer         AddAnalyzerBehaviorConfig         `yaml:"AddAnalyzer,omitempty"`
 	RemoveAnalyzer      RemoveAnalyzerBehaviorConfig      `yaml:"RemoveAnalyzer,omitempty"`
+	AddHighLevelAnalyzer    AddHighLevelAnalyzerBehaviorConfig    `yaml:"AddHighLevelAnalyzer,omitempty"`
+	RemoveHighLevelAnalyzer RemoveHighLevelAnalyzerBehaviorConfig `yaml:"RemoveHighLevelAnalyzer,omitempty"`
 	ExportRawDataCsv    ExportRawDataCsvBehaviorConfig    `yaml:"ExportRawDataCsv,omitempty"`
 	ExportRawDataBinary ExportRawDataBinaryBehaviorConfig `yaml:"ExportRawDataBinary,omitempty"`
 	ExportDataTableCsv  ExportDataTableCsvBehaviorConfig  `yaml:"ExportDataTableCsv,omitempty"`
@@ -121,6 +123,27 @@ type RemoveAnalyzerBehaviorConfig struct {
 }
 
 type RemoveAnalyzerValidateConfig struct {
+	RequireCaptureExists  *bool `yaml:"require_capture_exists,omitempty"`
+	RequireAnalyzerExists *bool `yaml:"require_analyzer_exists,omitempty"`
+}
+
+type AddHighLevelAnalyzerBehaviorConfig struct {
+	Validate AddHighLevelAnalyzerValidateConfig `yaml:"validate,omitempty"`
+}
+
+type AddHighLevelAnalyzerValidateConfig struct {
+	RequireCaptureExists          *bool `yaml:"require_capture_exists,omitempty"`
+	RequireExtensionDirNonEmpty   *bool `yaml:"require_extension_directory_non_empty,omitempty"`
+	RequireHLANameNonEmpty        *bool `yaml:"require_hla_name_non_empty,omitempty"`
+	RequireInputAnalyzerIDNonZero *bool `yaml:"require_input_analyzer_id_non_zero,omitempty"`
+	RequireInputAnalyzerExists    *bool `yaml:"require_input_analyzer_exists,omitempty"`
+}
+
+type RemoveHighLevelAnalyzerBehaviorConfig struct {
+	Validate RemoveHighLevelAnalyzerValidateConfig `yaml:"validate,omitempty"`
+}
+
+type RemoveHighLevelAnalyzerValidateConfig struct {
 	RequireCaptureExists  *bool `yaml:"require_capture_exists,omitempty"`
 	RequireAnalyzerExists *bool `yaml:"require_analyzer_exists,omitempty"`
 }

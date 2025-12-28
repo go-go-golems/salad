@@ -20,6 +20,8 @@ const (
 	MethodCloseCapture        Method = "CloseCapture"
 	MethodAddAnalyzer         Method = "AddAnalyzer"
 	MethodRemoveAnalyzer      Method = "RemoveAnalyzer"
+	MethodAddHighLevelAnalyzer    Method = "AddHighLevelAnalyzer"
+	MethodRemoveHighLevelAnalyzer Method = "RemoveHighLevelAnalyzer"
 	MethodExportRawDataCsv    Method = "ExportRawDataCsv"
 	MethodExportRawDataBinary Method = "ExportRawDataBinary"
 	MethodExportDataTableCsv  Method = "ExportDataTableCsv"
@@ -36,6 +38,8 @@ var AllMethods = []Method{
 	MethodCloseCapture,
 	MethodAddAnalyzer,
 	MethodRemoveAnalyzer,
+	MethodAddHighLevelAnalyzer,
+	MethodRemoveHighLevelAnalyzer,
 	MethodExportRawDataCsv,
 	MethodExportRawDataBinary,
 	MethodExportDataTableCsv,
@@ -142,6 +146,7 @@ func newState(plan *Plan, clock Clock) State {
 		Devices:        append([]*pb.Device{}, plan.Fixtures.Devices...),
 		Captures:       make(map[uint64]*CaptureState),
 		Analyzers:      make(map[uint64]map[uint64]*AnalyzerState),
+		HighLevelAnalyzers: make(map[uint64]map[uint64]*HighLevelAnalyzerState),
 		NextCaptureID:  plan.Defaults.CaptureIDStart,
 		NextAnalyzerID: plan.Defaults.AnalyzerIDStart,
 	}

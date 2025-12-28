@@ -277,6 +277,9 @@ func (s *Server) CloseCapture(ctx context.Context, req *pb.CloseCaptureRequest) 
 
 		switch runtime.Plan.Behavior.CloseCapture.Mode {
 		case CloseCaptureDelete:
+			// When deleting a capture, also delete analyzers attached to it to avoid state leaks.
+			delete(runtime.State.Analyzers, captureID)
+			delete(runtime.State.HighLevelAnalyzers, captureID)
 			delete(runtime.State.Captures, captureID)
 		case CloseCaptureMarkClosed:
 			capture.Status = CaptureStatusClosed
@@ -457,6 +460,110 @@ func (s *Server) RemoveAnalyzer(ctx context.Context, req *pb.RemoveAnalyzerReque
 		return nil, err
 	}
 	return out.(*pb.RemoveAnalyzerReply), nil
+}
+
+func (s *Server) AddHighLevelAnalyzer(ctx context.Context, req *pb.AddHighLevelAnalyzerRequest) (*pb.AddHighLevelAnalyzerReply, error) {
+	out, err := s.exec(ctx, MethodAddHighLevelAnalyzer, req, func(runtime *RuntimeContext) (any, error) {
+		captureID := req.GetCaptureId()
+		if captureID == 0 {
+			return nil, status.Error(codes.InvalidArgument, "AddHighLevelAnalyzer: capture_id is required")
+		}
+
+		if runtime.Plan.Behavior.AddHighLevelAnalyzer.RequireCaptureExists {
+			if _, err := runtime.State.captureFor(captureID, runtime.Plan.Defaults.StatusOnUnknownCaptureID); err != nil {
+				return nil, err
+			}
+		}
+
+		if runtime.Plan.Behavior.AddHighLevelAnalyzer.RequireExtensionDirNonEmpty && req.GetExtensionDirectory() == "" {
+			return nil, status.Error(codes.InvalidArgument, "AddHighLevelAnalyzer: extension_directory is required")
+		}
+		if runtime.Plan.Behavior.AddHighLevelAnalyzer.RequireHLANameNonEmpty && req.GetHlaName() == "" {
+			return nil, status.Error(codes.InvalidArgument, "AddHighLevelAnalyzer: hla_name is required")
+		}
+		if runtime.Plan.Behavior.AddHighLevelAnalyzer.RequireInputAnalyzerIDNonZero && req.GetInputAnalyzerId() == 0 {
+			return nil, status.Error(codes.InvalidArgument, "AddHighLevelAnalyzer: input_analyzer_id is required")
+		}
+		if runtime.Plan.Behavior.AddHighLevelAnalyzer.RequireInputAnalyzerExists {
+			byCapture := runtime.State.Analyzers[captureID]
+			if byCapture == nil {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("AddHighLevelAnalyzer: input analyzer %d not found", req.GetInputAnalyzerId()))
+			}
+			if _, ok := byCapture[req.GetInputAnalyzerId()]; !ok {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("AddHighLevelAnalyzer: input analyzer %d not found", req.GetInputAnalyzerId()))
+			}
+		}
+
+		analyzerID := runtime.State.NextAnalyzerID
+		runtime.State.NextAnalyzerID++
+
+		if runtime.State.HighLevelAnalyzers[captureID] == nil {
+			runtime.State.HighLevelAnalyzers[captureID] = make(map[uint64]*HighLevelAnalyzerState)
+		}
+
+		settingsCopy := make(map[string]*pb.HighLevelAnalyzerSettingValue, len(req.GetSettings()))
+		for k, v := range req.GetSettings() {
+			settingsCopy[k] = v
+		}
+
+		runtime.State.HighLevelAnalyzers[captureID][analyzerID] = &HighLevelAnalyzerState{
+			ID:             analyzerID,
+			CaptureID:       captureID,
+			ExtensionDir:    req.GetExtensionDirectory(),
+			HLAName:         req.GetHlaName(),
+			Label:           req.GetHlaLabel(),
+			InputAnalyzerID: req.GetInputAnalyzerId(),
+			Settings:        settingsCopy,
+			CreatedAt:       runtime.Clock.Now(),
+		}
+
+		return &pb.AddHighLevelAnalyzerReply{AnalyzerId: analyzerID}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out.(*pb.AddHighLevelAnalyzerReply), nil
+}
+
+func (s *Server) RemoveHighLevelAnalyzer(ctx context.Context, req *pb.RemoveHighLevelAnalyzerRequest) (*pb.RemoveHighLevelAnalyzerReply, error) {
+	out, err := s.exec(ctx, MethodRemoveHighLevelAnalyzer, req, func(runtime *RuntimeContext) (any, error) {
+		captureID := req.GetCaptureId()
+		if captureID == 0 {
+			return nil, status.Error(codes.InvalidArgument, "RemoveHighLevelAnalyzer: capture_id is required")
+		}
+		analyzerID := req.GetAnalyzerId()
+		if analyzerID == 0 {
+			return nil, status.Error(codes.InvalidArgument, "RemoveHighLevelAnalyzer: analyzer_id is required")
+		}
+
+		if runtime.Plan.Behavior.RemoveHighLevelAnalyzer.RequireCaptureExists {
+			if _, err := runtime.State.captureFor(captureID, runtime.Plan.Defaults.StatusOnUnknownCaptureID); err != nil {
+				return nil, err
+			}
+		}
+
+		byCapture := runtime.State.HighLevelAnalyzers[captureID]
+		if byCapture == nil {
+			if runtime.Plan.Behavior.RemoveHighLevelAnalyzer.RequireAnalyzerExists {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("RemoveHighLevelAnalyzer: analyzer %d not found", analyzerID))
+			}
+			return &pb.RemoveHighLevelAnalyzerReply{}, nil
+		}
+
+		if _, ok := byCapture[analyzerID]; !ok {
+			if runtime.Plan.Behavior.RemoveHighLevelAnalyzer.RequireAnalyzerExists {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("RemoveHighLevelAnalyzer: analyzer %d not found", analyzerID))
+			}
+			return &pb.RemoveHighLevelAnalyzerReply{}, nil
+		}
+
+		delete(byCapture, analyzerID)
+		return &pb.RemoveHighLevelAnalyzerReply{}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out.(*pb.RemoveHighLevelAnalyzerReply), nil
 }
 
 func (runtime *RuntimeContext) blockUntilDone(capture *CaptureState) (*pb.WaitCaptureReply, error) {
