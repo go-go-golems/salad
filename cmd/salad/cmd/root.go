@@ -52,4 +52,5 @@ func init() {
 	rootCmd.AddCommand(analyzerCmd)
 	rootCmd.AddCommand(captureCmd)
 	rootCmd.AddCommand(exportCmd)
+	rootCmd.AddCommand(runCmd)
 }
